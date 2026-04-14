@@ -3,27 +3,64 @@
 <head>
     <meta charset="utf-8">
     <title>Clubbage: The Game</title>
-    <link rel="stylesheet" href="css\bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="css\bootstrap-icons.min.css" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2i" crossorigin="anonymous">
-    <style>
-        .text-green { color: #198754; }  /* matches Bootstrap text-success */
-        .text-gold  { color: #ffc107; }  /* matches Bootstrap text-warning */
-        .text-red   { color: #dc3545; }  /* matches Bootstrap text-danger */
-    </style>
+    <link rel="stylesheet" href="css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/clubbage.css">
 </head>
 <body>
     <div class="container">
         <div class="row">
-            <div class="col">
+            <div class="col-12">
                 <h1>Clubbage</h1>
-                <h2>Rules:</h2>
-                <ul>
-                    <li></li>
-                </ul>
-                <h2>HitPoints: <span id="hitpoints">0</span></h2>
+            </div>
+        </div>
+
+        <div class="row bg-primary-subtle">
+            <div class="col-12"><h5>Main Deck</h5></div>
+            <div class="col-12 col-lg-3">
+                <button id="btn_main_start" class="btn btn-primary" onclick="initGame()">Start Game</button><br>
+                <button id="btn_main_shuffle" class="btn btn-primary" onclick="shuffleDeck('main_deck', 'mainDeck')" disabled="disabled">Shuffle</button>
+                <button id="btn_main_sort" class="btn btn-primary" onclick="sortDeck('main_deck', 'mainDeck')" disabled="disabled">Sort</button><br>
+                <button id="btn_main_deal" class="btn btn-primary" onclick="dealToPlayers()" disabled="disabled">Deal To Players</button>
+            </div>
+            <div class="col-12 col-md-9">
+                <div id="main_deck"></div>
+            </div>
+        </div>
+
+        <div class="row bg-secondary-subtle">
+            <div class="col-12"><h5>Crib Deck</h5></div>
+            <div class="col-12 col-lg-3">
+                <button id="btn_crib_shuffle" class="btn btn-primary" onclick="shuffleDeck('crib_deck', 'cribDeck')" disabled="disabled">Shuffle</button>
+                <button id="btn_crib_sort" class="btn btn-primary" onclick="sortDeck('crib_deck', 'cribDeck')" disabled="disabled">Sort</button>
+            </div>
+            <div class="col-12 col-lg-9">
+                <div id="crib_deck"></div>
+            </div>
+        </div>
+
+        <div class="row bg-primary-subtle">
+            <div class="col-12"><h5>Player 2 Deck (computer)</h5></div>
+            <div class="col-12 col-lg-3">
+                <button id="btn_player2_shuffle" class="btn btn-primary" onclick="shuffleDeck('player_2_deck', 'player2Deck')" disabled="disabled">Shuffle</button>
+                <button id="btn_player2_sort" class="btn btn-primary" onclick="sortDeck('player_2_deck', 'player2Deck')" disabled="disabled">Sort</button>
+            </div>
+            <div class="col-12 col-lg-9">
+                <div id="player_2_deck"></div>
+            </div>
+        </div>
+
+        <div class="row bg-secondary-subtle">
+            <div class="col-12"><h5>Player 1 Deck</h5></div>
+            <div class="col-12 col-lg-3">
+                <button id="btn_player1_shuffle" class="btn btn-primary" onclick="shuffleDeck('player_1_deck', 'player1Deck')" disabled="disabled">Shuffle</button>
+                <button id="btn_player1_sort" class="btn btn-primary" onclick="sortDeck('player_1_deck', 'player1Deck')" disabled="disabled">Sort</button>
+            </div>
+            <div class="col-12 col-lg-9">
+                <div id="player_1_deck"></div>
             </div>
         </div>
     </div>
-    <script src="js/clubbage.js"></script>
+    <script type="module" src="js/clubbage.js"></script><!-- needs to be type="module" for the import of Deck.js class file. -->
 </body>
 </html>
