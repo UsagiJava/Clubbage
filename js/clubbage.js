@@ -63,7 +63,8 @@ function initGame() {
         // disable start button and enable shuffle/deal buttons
         document.getElementById('btn_main_start').disabled = true;
         document.getElementById('btn_main_shuffle').disabled = false;
-        document.getElementById('btn_main_sort').disabled = false;
+        document.getElementById('btn_main_sort_suit').disabled = false;
+        document.getElementById('btn_main_sort_value').disabled = false;
         document.getElementById('btn_main_deal').disabled = false;
     }
 }
@@ -124,13 +125,13 @@ function shuffleDeck(locationID, deckName) {
     showDeck(locationID, deckState.deck);
 }
 
-function sortDeck(locationID, deckName) {
+function sortDeck(locationID, deckName, sortType) {
     const deckState = gameState.decks[deckName];
     if (!deckState) {
         console.warn(`Deck not found: ${deckName}`);
         return;
     }
-    deckState.deck.sort();
+    deckState.deck.sort(sortType);
     showDeck(locationID, deckState.deck);
 }
 
@@ -146,14 +147,49 @@ function dealToPlayers() {
     showDeck('player_1_deck', player1Deck);
     showDeck('player_2_deck', player2Deck);
     console.log("Dealt cards to players. Current game state:", gameState);
-    // enable enable shuffle/sort buttons
+    // enable shuffle/sort/return buttons
     document.getElementById('btn_player1_shuffle').disabled = false;
-    document.getElementById('btn_player1_sort').disabled = false;
+    document.getElementById('btn_player1_sort_suit').disabled = false;
+    document.getElementById('btn_player1_sort_value').disabled = false;
+    document.getElementById('btn_player1_return').disabled = false;
     document.getElementById('btn_player2_shuffle').disabled = false;
-    document.getElementById('btn_player2_sort').disabled = false;
+    document.getElementById('btn_player2_sort_suit').disabled = false;
+    document.getElementById('btn_player2_sort_value').disabled = false;
+    document.getElementById('btn_player2_return').disabled = false;
+}
+
+function returnCards(fromDeckName, toDeckName) {
+    const fromDeckState = gameState.decks[fromDeckName];
+    const toDeckState = gameState.decks[toDeckName];
+    if (!fromDeckState || !toDeckState) {
+        console.warn(`Deck not found: ${fromDeckName} or ${toDeckName}`);
+        return;
+    }
+    const fromDeck = fromDeckState.deck;
+    const toDeck = toDeckState.deck;
+    while (fromDeck.getCards().length > 0) {
+        fromDeck.drawCard(toDeck);
+    }
+
+    // disable shuffle/sort/return buttons
+    if (fromDeckName === 'player1Deck') {
+        document.getElementById('btn_player1_shuffle').disabled = true;
+        document.getElementById('btn_player1_sort_suit').disabled = true;
+        document.getElementById('btn_player1_sort_value').disabled = true;
+        document.getElementById('btn_player1_return').disabled = true;
+    } else if (fromDeckName === 'player2Deck') {
+        document.getElementById('btn_player2_shuffle').disabled = true;
+        document.getElementById('btn_player2_sort_suit').disabled = true;
+        document.getElementById('btn_player2_sort_value').disabled = true;
+        document.getElementById('btn_player2_return').disabled = true;
+    }
+
+    showDeck(fromDeckName === 'player1Deck' ? 'player_1_deck' : 'player_2_deck', fromDeck);
+    showDeck('main_deck', gameState.decks.mainDeck.deck);
 }
 
 window.initGame = initGame;
 window.shuffleDeck = shuffleDeck;
 window.sortDeck = sortDeck;
 window.dealToPlayers = dealToPlayers;
+window.returnCards = returnCards;
