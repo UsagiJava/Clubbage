@@ -62,27 +62,11 @@ function initGame() {
 
         // disable start button and enable shuffle/deal buttons
         document.getElementById('btn_main_start').disabled = true;
+        document.getElementById('btn_main_start').classList.add('d-none');
         document.getElementById('btn_main_shuffle').disabled = false;
         document.getElementById('btn_main_sort_suit').disabled = false;
         document.getElementById('btn_main_sort_value').disabled = false;
         document.getElementById('btn_main_deal').disabled = false;
-    }
-}
-
-function showDeck(locationID, deck) {
-    const location = document.getElementById(locationID);
-    location.innerHTML = '';
-    const cardsPerRow = 13;
-    for (const card of deck.getCards()) {
-        if (deck.getCards().indexOf(card) % cardsPerRow === 0 && deck.getCards().indexOf(card) !== 0) {
-            location.appendChild(document.createElement('br'));
-        }
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'game_card';
-        cardDiv.setAttribute('title', `ID: ${card.id}\nPeg Value: ${card.pegValue}\nRun Value: ${card.runValue}\nSuit Order: ${deck.suitOrder[card.suit]}\nRank Order: ${deck.rankOrder[card.rank]}`);
-        const suitIconClass = getSuitIconClass(card.suit);
-        cardDiv.innerHTML = `<div class="game_card_rank">${card.rank}</div><i class="bi ${suitIconClass}" aria-label="${card.suit}"></i>`;
-        location.appendChild(cardDiv);
     }
 }
 
@@ -115,34 +99,34 @@ function getRunValue(rank) {
     return parseInt(rank);
 }
 
-function shuffleDeck(locationID, deckName) {
-    const deckState = gameState.decks[deckName];
-    if (!deckState) {
-        console.warn(`Deck not found: ${deckName}`);
-        return;
+function showDeck(locationID, deck) {
+    const location = document.getElementById(locationID);
+    location.innerHTML = '';
+    for (const card of deck.getCards()) {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'game_card';
+        cardDiv.setAttribute('title', `ID: ${card.id}\nPeg Value: ${card.pegValue}\nRun Value: ${card.runValue}\nSuit Order: ${deck.suitOrder[card.suit]}\nRank Order: ${deck.rankOrder[card.rank]}`);
+        const suitIconClass = getSuitIconClass(card.suit);
+        cardDiv.innerHTML = `<div class="game_card_rank">${card.rank}</div><i class="bi ${suitIconClass}" aria-label="${card.suit}"></i>`;
+        location.appendChild(cardDiv);
     }
-    deckState.deck.shuffle();
-    showDeck(locationID, deckState.deck);
+}
+
+function shuffleDeck(locationID, deckName) {
+    gameState.decks[deckName].deck.shuffle();
+    showDeck(locationID, gameState.decks[deckName].deck);
 }
 
 function sortDeck(locationID, deckName, sortType) {
-    const deckState = gameState.decks[deckName];
-    if (!deckState) {
-        console.warn(`Deck not found: ${deckName}`);
-        return;
-    }
-    deckState.deck.sort(sortType);
-    showDeck(locationID, deckState.deck);
+    gameState.decks[deckName].deck.sort(sortType);
+    showDeck(locationID, gameState.decks[deckName].deck);
 }
 
 function dealToPlayers() {
     const mainDeck = gameState.decks.mainDeck.deck;
     const player1Deck = gameState.decks.player1Deck.deck;
     const player2Deck = gameState.decks.player2Deck.deck;
-    for (let i = 0; i < DECK_PLAYER_SIZE; i++) {
-        mainDeck.drawCard(player1Deck);
-        mainDeck.drawCard(player2Deck);
-    }
+    mainDeck.deal([player1Deck, player2Deck], [DECK_PLAYER_SIZE, DECK_PLAYER_SIZE], 'top');
     showDeck('main_deck', mainDeck);
     showDeck('player_1_deck', player1Deck);
     showDeck('player_2_deck', player2Deck);
@@ -159,18 +143,9 @@ function dealToPlayers() {
 }
 
 function returnCards(fromDeckName, toDeckName) {
-    const fromDeckState = gameState.decks[fromDeckName];
-    const toDeckState = gameState.decks[toDeckName];
-    if (!fromDeckState || !toDeckState) {
-        console.warn(`Deck not found: ${fromDeckName} or ${toDeckName}`);
-        return;
-    }
-    const fromDeck = fromDeckState.deck;
-    const toDeck = toDeckState.deck;
-    while (fromDeck.getCards().length > 0) {
-        fromDeck.drawCard(toDeck);
-    }
-
+    const fromDeck = gameState.decks[fromDeckName].deck;
+    const toDeck = gameState.decks[toDeckName].deck;
+    fromDeck.deal([toDeck], [fromDeck.getCards().length], 'top');
     // disable shuffle/sort/return buttons
     if (fromDeckName === 'player1Deck') {
         document.getElementById('btn_player1_shuffle').disabled = true;
@@ -183,7 +158,6 @@ function returnCards(fromDeckName, toDeckName) {
         document.getElementById('btn_player2_sort_value').disabled = true;
         document.getElementById('btn_player2_return').disabled = true;
     }
-
     showDeck(fromDeckName === 'player1Deck' ? 'player_1_deck' : 'player_2_deck', fromDeck);
     showDeck('main_deck', gameState.decks.mainDeck.deck);
 }

@@ -17,13 +17,13 @@
 
         <div class="row bg-primary-subtle">
             <div class="col-12"><h5>Main Deck</h5></div>
-            <div class="col-12 col-lg-3">
-                <button id="btn_main_start" class="btn btn-primary" onclick="initGame()">Start Game</button>
+            <div class="col-12 col-md-2">
+                <button id="btn_main_start" class="btn btn-primary" onclick="initGame()">Start</button>
             </div>
-            <div class="col-12 col-md-9">
+            <div class="col-12 col-md-10">
                 <div id="main_deck"></div>
             </div>
-            <div class="col-12 col-lg-9 offset-lg-3">
+            <div class="col-12 col-md-10 offset-md-2">
                 <button id="btn_main_shuffle" class="btn btn-primary" onclick="shuffleDeck('main_deck', 'mainDeck')" disabled="disabled">Shuffle</button>
                 <button id="btn_main_sort_suit" class="btn btn-primary" onclick="sortDeck('main_deck', 'mainDeck','suit-value')" disabled="disabled">Sort Suit</button>
                 <button id="btn_main_sort_value" class="btn btn-primary" onclick="sortDeck('main_deck', 'mainDeck','value')" disabled="disabled">Sort Value</button>
@@ -32,11 +32,11 @@
         </div>
 
         <div class="row bg-secondary-subtle">
-            <div class="col-12 col-lg-3"><h5>Crib Deck</h5></div>
-            <div class="col-12 col-lg-9">
+            <div class="col-12 col-md-2"><h5>Crib Deck</h5></div>
+            <div class="col-12 col-md-10">
                 <div id="crib_deck"></div>
             </div>
-            <div class="col-12 col-lg-9 offset-lg-3">
+            <div class="col-12 col-md-10 offset-md-2">
                 <button id="btn_crib_shuffle" class="btn btn-primary" onclick="shuffleDeck('crib_deck', 'cribDeck')" disabled="disabled">Shuffle</button>
                 <button id="btn_crib_sort_suit" class="btn btn-primary" onclick="sortDeck('crib_deck', 'cribDeck','suit-value')" disabled="disabled">Sort Suit</button>
                 <button id="btn_crib_sort_value" class="btn btn-primary" onclick="sortDeck('crib_deck', 'cribDeck','value')" disabled="disabled">Sort Value</button>
@@ -45,11 +45,11 @@
         </div>
 
         <div class="row bg-primary-subtle">
-            <div class="col-12 col-lg-3"><h5>Player 2 Deck (computer)</h5></div>
-            <div class="col-12 col-lg-9">
+            <div class="col-12 col-md-2"><h5>Player 2 Deck</h5></div>
+            <div class="col-12 col-md-10">
                 <div id="player_2_deck"></div>
             </div>
-            <div class="col-12 col-lg-9 offset-lg-3">
+            <div class="col-12 col-md-10 offset-md-2">
                 <button id="btn_player2_shuffle" class="btn btn-primary" onclick="shuffleDeck('player_2_deck', 'player2Deck')" disabled="disabled">Shuffle</button>
                 <button id="btn_player2_sort_suit" class="btn btn-primary" onclick="sortDeck('player_2_deck', 'player2Deck','suit-value')" disabled="disabled">Sort Suit</button>
                 <button id="btn_player2_sort_value" class="btn btn-primary" onclick="sortDeck('player_2_deck', 'player2Deck','value')" disabled="disabled">Sort Value</button>
@@ -58,11 +58,11 @@
         </div>
 
         <div class="row bg-secondary-subtle">
-            <div class="col-12 col-lg-3"><h5>Player 1 Deck</h5></div>
-            <div class="col-12 col-lg-9">
+            <div class="col-12 col-md-2"><h5>Player 1 Deck</h5></div>
+            <div class="col-12 col-md-10">
                 <div id="player_1_deck"></div>
             </div>
-            <div class="col-12 col-lg-9 offset-lg-3">
+            <div class="col-12 col-md-10 offset-md-2">
                 <button id="btn_player1_shuffle" class="btn btn-primary" onclick="shuffleDeck('player_1_deck', 'player1Deck')" disabled="disabled">Shuffle</button>
                 <button id="btn_player1_sort_suit" class="btn btn-primary" onclick="sortDeck('player_1_deck', 'player1Deck','suit-value')" disabled="disabled">Sort Suit</button>
                 <button id="btn_player1_sort_value" class="btn btn-primary" onclick="sortDeck('player_1_deck', 'player1Deck','value')" disabled="disabled">Sort Value</button>

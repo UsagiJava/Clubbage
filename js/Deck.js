@@ -37,6 +37,7 @@ class Deck {
         return true;
     }
 
+    // helper function to remove a card from this deck and add it to a target deck.
     removeCard(card, targetDeck) {
         const cardIndex = this.cards.findIndex(c => c.id === card.id);
 
@@ -53,16 +54,6 @@ class Deck {
         const removedCard = this.cards.splice(cardIndex, 1)[0];
         targetDeck.addCard(removedCard);
         return true;
-    }
-
-    drawCard(targetDeck) {
-        if (this.getCardCount() === 0) {
-            console.warn('Cannot draw card. Deck is empty');
-            return false;
-        }
-
-        const cardToDraw = this.cards[this.cards.length - 1];
-        return this.removeCard(cardToDraw, targetDeck);
     }
 
     shuffle() {
@@ -91,6 +82,41 @@ class Deck {
                 });
                 break;
         }
+    }
+
+    // Deal a total number of cards to a list of target decks.
+    // decks: array of Deck objects to deal to.
+    // total: array of numbers matching each target deck.
+    // location: where to deal from, either 'top' or 'bottom'.
+    deal(decks, total = [1], location = 'top') {
+        // check that the decks length is the same as the total length, and provide a warning if it is not and quit out.
+        if (decks.length !== total.length) {
+            console.warn('Length of total array must match length of decks array.');
+            return false;
+        }
+        // get the sum of the numbers found in the total array, then check if the deck has enough cards to deal, and provide a warning if it does not and quit out.
+        let totalCardsToDeal = total.reduce((sum, b) => sum + b, 0);
+        if (this.getCardCount() < totalCardsToDeal) {
+            console.warn(`Cannot deal cards. Not enough cards in deck to deal ${totalCardsToDeal} cards.`);
+            return false;
+        }
+        // find the highest total count to deal to any single deck, so we know how many rounds of dealing we need to do.
+        const maxRounds = Math.max(...total);
+        // loop through rounds of dealing a card to each deck until all decks have received their target number of cards.
+        for(let round = 0; round < maxRounds; round++) {
+            // loop through each target deck and deal one card to it if it has not yet received its target number of cards.
+            for (let i = 0; i < decks.length; i++) {
+                // Skip if this deck has already received its target number of cards.
+                if (round >= total[i]) {
+                    continue;
+                }
+                let cardToDeal = (location === 'bottom') ? this.cards[0] : this.cards[this.cards.length - 1];
+                if (!this.removeCard(cardToDeal, decks[i])) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     getCards() {

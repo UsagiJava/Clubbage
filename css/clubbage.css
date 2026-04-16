@@ -15,6 +15,10 @@
     max-height: 100%;
 }
 
+#main_deck {
+    max-width: 650px;
+}
+
 .game_card {
     width: 40px;
     height: 60px;
