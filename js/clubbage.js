@@ -67,13 +67,9 @@ function initGame() {
         showDeck('deck_id_mainDeck', mainDeck);
         console.log("initGame() called, game state initialized:", gameState);
 
-        // disable start button and enable shuffle/deal buttons
-        document.getElementById('btn_main_start').disabled = true;
+        // disable/hide start button.
         document.getElementById('btn_main_start').classList.add('d-none');
-        document.getElementById('btn_main_shuffle').disabled = false;
-        document.getElementById('btn_main_sort_suit').disabled = false;
-        document.getElementById('btn_main_sort_value').disabled = false;
-        document.getElementById('btn_main_deal_cards').disabled = false;
+        refreshDecks();
     }
 }
 
@@ -89,7 +85,6 @@ function onCardClick(event) {
     const sendButton = document.getElementById(cardElement.dataset.sendBtnId);
     if (sendButton) {
         const selectedCards = document.querySelectorAll(`.game_card.selected[data-deck-id="${deckId}"]`);
-        sendButton.disabled = selectedCards.length === 0;
     }
     console.log(`Card ID: ${cardId}, Deck ID: ${deckId}`);
 }
@@ -142,14 +137,48 @@ function showDeck(locationID, deck) {
     }
 }
 
+function refreshDecks() {
+    for (const deckKey in gameState.decks) {
+        const deckInfo = gameState.decks[deckKey];
+        const locationID = `deck_id_${deckKey}`;
+        showDeck(locationID, deckInfo.deck);
+
+        // if deck is empty disable the associated shuffle/sort/return buttons, otherwise enable them.\
+        console.log(`Refreshing deck ${deckKey}. Card count: ${deckInfo.deck.getCardCount()}`);
+        // remove the "Deck" suffix from the deckKey to get the base name for the button IDs. IE: "mainDeck" becomes "main", "player1Deck" becomes "player1", etc.
+        const baseName = deckKey.replace('Deck', '');
+        const shuffleButton = document.getElementById(`btn_${baseName}_shuffle`);
+        const sortSuitButton = document.getElementById(`btn_${baseName}_sort_suit`);
+        const sortValueButton = document.getElementById(`btn_${baseName}_sort_value`);
+        const returnButton = document.getElementById(`btn_${baseName}_return_cards`);
+        const dealCardsButton = document.getElementById(`btn_${baseName}_deal_cards`);
+        const sendButton = document.getElementById(`btn_${baseName}_send`);
+        if (deckInfo.deck.getCardCount() === 0) {
+            if (shuffleButton) shuffleButton.disabled = true;
+            if (sortSuitButton) sortSuitButton.disabled = true;
+            if (sortValueButton) sortValueButton.disabled = true;
+            if (returnButton) returnButton.disabled = true;
+            if (dealCardsButton) dealCardsButton.disabled = true;
+            if (sendButton) sendButton.disabled = true;
+        } else {
+            if (shuffleButton) shuffleButton.disabled = false;
+            if (sortSuitButton) sortSuitButton.disabled = false;
+            if (sortValueButton) sortValueButton.disabled = false;
+            if (returnButton) returnButton.disabled = false;
+            if (dealCardsButton) dealCardsButton.disabled = false;
+            if (sendButton) sendButton.disabled = false;
+        }
+    }
+}
+
 function shuffleDeck(locationID, deckName) {
     gameState.decks[deckName].deck.shuffle();
-    showDeck(locationID, gameState.decks[deckName].deck);
+    refreshDecks()
 }
 
 function sortDeck(locationID, deckName, sortType) {
     gameState.decks[deckName].deck.sort(sortType);
-    showDeck(locationID, gameState.decks[deckName].deck);
+    refreshDecks()
 }
 
 function dealToPlayers() {
@@ -157,41 +186,27 @@ function dealToPlayers() {
     const player1Deck = gameState.decks.player1Deck.deck;
     const player2Deck = gameState.decks.player2Deck.deck;
     mainDeck.deal([player1Deck, player2Deck], [DECK_PLAYER_SIZE, DECK_PLAYER_SIZE], 'top');
-    showDeck('deck_id_mainDeck', mainDeck);
-    showDeck('deck_id_player1Deck', player1Deck);
-    showDeck('deck_id_player2Deck', player2Deck);
+    refreshDecks();
     console.log("Dealt cards to players. Current game state:", gameState);
-    // enable shuffle/sort/return buttons
-    document.getElementById('btn_player1_shuffle').disabled = false;
-    document.getElementById('btn_player1_sort_suit').disabled = false;
-    document.getElementById('btn_player1_sort_value').disabled = false;
-    document.getElementById('btn_player1_return_cards').disabled = false;
-    document.getElementById('btn_player2_shuffle').disabled = false;
-    document.getElementById('btn_player2_sort_suit').disabled = false;
-    document.getElementById('btn_player2_sort_value').disabled = false;
-    document.getElementById('btn_player2_return_cards').disabled = false;
-    document.getElementById('btn_play_return_cards').disabled = false;
 }
 
-function sendCards(fromDeckName, toDeckName, numCards = null) {
+function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = false) {
     const fromDeck = gameState.decks[fromDeckName].deck;
     const toDeck = gameState.decks[toDeckName].deck;
-    const cardsToSend = (numCards !== null) ? numCards : fromDeck.getCards().length;
-    fromDeck.deal([toDeck], [cardsToSend], 'top');
-    // disable shuffle/sort/return buttons
-    if (fromDeckName === 'player1Deck') {
-        document.getElementById('btn_player1_shuffle').disabled = true;
-        document.getElementById('btn_player1_sort_suit').disabled = true;
-        document.getElementById('btn_player1_sort_value').disabled = true;
-        document.getElementById('btn_player1_return_cards').disabled = true;
-    } else if (fromDeckName === 'player2Deck') {
-        document.getElementById('btn_player2_shuffle').disabled = true;
-        document.getElementById('btn_player2_sort_suit').disabled = true;
-        document.getElementById('btn_player2_sort_value').disabled = true;
-        document.getElementById('btn_player2_return_cards').disabled = true;
+    let cardsToSend = (numCards !== null) ? numCards : fromDeck.getCards().length;
+
+    if (specificCards) {
+        cardsToSend = Array.from(document.querySelectorAll(`.game_card.selected[data-deck-id="${fromDeck.id}"]`)).map(cardElement => {
+            const cardId = cardElement.dataset.cardId;
+            return fromDeck.getCards().find(card => card.id === cardId);
+        });
+        console.log(`Specific cards selected to send from ${fromDeckName} to ${toDeckName}:`, cardsToSend);
+        fromDeck.pass(toDeck, cardsToSend);
+    } else {
+        fromDeck.deal([toDeck], [cardsToSend], 'top');
     }
-    showDeck(fromDeckName === 'player1Deck' ? 'deck_id_player1Deck' : 'deck_id_player2Deck', fromDeck);
-    showDeck('deck_id_mainDeck', gameState.decks.mainDeck.deck);
+
+    refreshDecks();
 }
 
 window.initGame = initGame;

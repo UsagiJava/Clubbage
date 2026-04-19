@@ -34,7 +34,7 @@
                         <option value="playDeck">Play Deck</option>
                         <option value="player1Deck">Player 1 Deck</option>
                     </select>
-                    <button id="btn_main_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
+                    <button id="btn_main_send" class="btn btn-primary text-nowrap" type="button" onclick="sendCards('mainDeck', document.getElementById('select_mainDeck_send').value, null, true)" disabled="disabled">Send</button>
                 </div>
                 <button id="btn_main_deal_cards" class="btn btn-primary text-nowrap" onclick="dealToPlayers()" disabled="disabled">Deal Cards</button>
             </div>
@@ -57,7 +57,7 @@
                         <option value="playDeck">Play Deck</option>
                         <option value="player1Deck">Player 1 Deck</option>
                     </select>
-                    <button id="btn_crib_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
+                    <button id="btn_crib_send" class="btn btn-primary text-nowrap" type="button" onclick="sendCards('cribDeck', document.getElementById('select_crib_send').value, null, true)" disabled="disabled">Send</button>
                 </div>
                 <button id="btn_crib_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('cribDeck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>
@@ -80,7 +80,7 @@
                         <option value="playDeck">Play Deck</option>
                         <option value="player1Deck">Player 1 Deck</option>
                     </select>
-                    <button id="btn_player2_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
+                    <button id="btn_player2_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled" onclick="sendCards('player2Deck', document.getElementById('select_player2_send').value, null, true)">Send</button>
                 </div>
                 <button id="btn_player2_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('player2Deck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>
@@ -113,7 +113,7 @@
                         <option value="player2Deck">Player 2 Deck</option>
                         <option value="playDeck">Play Deck</option>
                     </select>
-                    <button id="btn_player1_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
+                    <button id="btn_player1_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled" onclick="sendCards('player1Deck', document.getElementById('select_player1_send').value, null, true)">Send</button>
                 </div>
                 <button id="btn_player1_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('player1Deck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>

@@ -85,9 +85,21 @@ class Deck {
         }
     }
 
+    pass(targetDeck, cards) {
+        for (const card of cards) {
+            if (!this.removeCard(card, targetDeck)) {
+                console.warn(`Failed to pass card ${card.id} from deck ${this.id} to deck ${targetDeck.id}`);
+                return false;
+            } else {
+                console.log(`Passed card ${card.id} from deck ${this.id} to deck ${targetDeck.id}`);
+            }
+        }
+        return true;
+    }
+
     // Deal a total number of cards to a list of target decks.
-    // decks: array of Deck objects to deal to.
-    // total: array of numbers matching each target deck.
+    // decks: array of target Deck objects to deal to.
+    // total: array of numbers (of cards to deal) to each target deck.
     // location: where to deal from, either 'top' or 'bottom'.
     // EXAMPLE: deal 3 cards to deck1, 2 cards to deck2, and 1 card to deck3 from the top of the deck: deal([deck1, deck2, deck3], [3, 2, 1], 'top');
     deal(decks, total = [1], location = 'top') {
