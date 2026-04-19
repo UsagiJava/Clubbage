@@ -1,7 +1,8 @@
 class Deck {
 
     // The order of the suits and ranks arrays defines both iteration and sort order.
-    constructor(maxSize = 52, suits = ['hearts', 'diamonds', 'clubs', 'spades'], ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']) {
+    constructor(id, maxSize = 52, suits = ['hearts', 'diamonds', 'clubs', 'spades'], ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']) {
+        this.id = id;
         this.cards = [];
         this.maxSize = maxSize;
         this.suits = [...suits]; // Create copy of the suits array to prevent external mutation.
@@ -30,7 +31,7 @@ class Deck {
 
     addCard(card) {
         if (this.isFull()) {
-            console.warn(`Cannot add card. Deck is full (${this.getCardCount()}/${this.maxSize})`);
+            console.warn(`Cannot add card to deck ${this.id}. Deck is full (${this.getCardCount()}/${this.maxSize})`);
             return false;
         }
         this.cards.push(card);
@@ -42,12 +43,12 @@ class Deck {
         const cardIndex = this.cards.findIndex(c => c.id === card.id);
 
         if (cardIndex === -1) {
-            console.warn(`Card ${card.id} not found in deck`);
+            console.warn(`Card ${card.id} not found in deck ${this.id}`);
             return false;
         }
 
         if (targetDeck.isFull()) {
-            console.warn(`Cannot move card to target deck. Target deck is full (${targetDeck.getCardCount()}/${targetDeck.maxSize})`);
+            console.warn(`Cannot move card to target deck ${targetDeck.id}. Target deck is full (${targetDeck.getCardCount()}/${targetDeck.maxSize})`);
             return false;
         }
 
@@ -88,6 +89,7 @@ class Deck {
     // decks: array of Deck objects to deal to.
     // total: array of numbers matching each target deck.
     // location: where to deal from, either 'top' or 'bottom'.
+    // EXAMPLE: deal 3 cards to deck1, 2 cards to deck2, and 1 card to deck3 from the top of the deck: deal([deck1, deck2, deck3], [3, 2, 1], 'top');
     deal(decks, total = [1], location = 'top') {
         // check that the decks length is the same as the total length, and provide a warning if it is not and quit out.
         if (decks.length !== total.length) {

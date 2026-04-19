@@ -15,8 +15,8 @@
     max-height: 100%;
 }
 
-#main_deck {
-    max-width: 650px;
+#deck_id_mainDeck {
+    max-width: 650px; /* only here to provide 13 cards per row so the suits look good stacked on the main deck.  Remove later when the main deck is a stack of cards. */
 }
 
 .game_card {
@@ -34,11 +34,12 @@
     color: #000000;
     cursor: pointer;
 }
+.game_card.selected {
+    border-color: #c99908;
+    background-color: #fff3cd;
+}
 
 .game_card i {
     display: block;
 }
 
-button {
-    margin-bottom: 1em;
-}
