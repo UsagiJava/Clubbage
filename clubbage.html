@@ -118,6 +118,12 @@
                 <button id="btn_player1_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('player1Deck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>
         </div>
+
+        <div class="row game_commentary_row">
+            <div class="col-12 px-0">
+                <div id="gameLog" class="game_commentary_log overflow-auto"></div>
+            </div>
+        </div>
     </div>
     <script type="module" src="js/clubbage.js"></script><!-- needs to be type="module" for the import of Deck.js class file. -->
 </body>

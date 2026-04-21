@@ -39,7 +39,20 @@
     background-color: #fff3cd;
 }
 
-.game_card i {
-    display: block;
+.game_commentary_row { background-color: #111827; }
+.game_commentary_log_entry.game_action { color: #ffda6a; }
+.game_commentary_log_entry.game_danger { color: #ea868f; }
+.game_commentary_log_entry.game_info { color: #9ec5fe; }
+.game_commentary_log_entry.game_success { color: #75b798; }
+
+.game_commentary_log {
+    height: 16.8rem;
+    padding: 0 1rem;
+    color: #f8f9fa;
+    font-family: monospace;
 }
 
+.game_commentary_log_entry {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
