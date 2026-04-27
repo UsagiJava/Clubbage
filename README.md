@@ -6,9 +6,9 @@ PRESS to open preview window in VSC with, CTRL+SHIFT+V
 Clubbage is a blend of the card game "Cribbage" with the video game "Mike Tyson's Punch-Out!!".  Instead of taking steps around a track, Players will deal damage to win boxing matches.
 
 
-1. **Corner Selection (Red/Blue):** A coin is flipped at the start of a fight to determine which corner a player will get.  If the Player guesses correctly, they will get the red/home corner.  This means they'll start as "dealer" and gets the first crib.
+1. **Phase: Corner Selection (Red/Blue):** A coin is flipped at the start of a fight to determine which corner a player will get.  If the Player guesses correctly, they will get the red/home corner.  This means they'll start as "dealer" and gets the first crib.
 
-2. **Break to Corner:** Six cards are dealt to each player. Each player discards 2 cards to the crib. The dealer gets the crib.
+2. **Phase: Corner Break:** Six cards are dealt to each player. Each player discards 2 cards to the crib. The dealer gets the crib.
 
 3. **Bell Rings:** The round starts and a shared top card of the deck is turned up.
 

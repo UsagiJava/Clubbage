@@ -5,10 +5,12 @@ const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
 const DECK_MAIN_SIZE = 52;
 const DECK_CRIB_SIZE = 4;
 const DECK_PLAY_SIZE = 8;
+const DECK_FLIP_SIZE = 1;
 const DECK_PLAYER_SIZE = 6;
 const MAIN_NAME = ['Main Deck'];
 const CRIB_NAME = ['Crib Deck'];
 const PLAY_NAME = ['Play Deck'];
+const FLIP_NAME = ['Flip Deck'];
 const PLAYER_NAMES = ['Player 1', 'Player 2']; // Display Names Of Characters For Game UI Placeholder.
 
 let gameState = {
@@ -16,7 +18,8 @@ let gameState = {
     decks: {},
     currentPlayer: 0,
     round: 0,
-    cribOwner: 0
+    cribOwner: 1,
+    phase: 'cornerSelection'
 };
 
 // Called by "Start Game" button.
@@ -29,7 +32,8 @@ function initGame() {
             mainDeck: {
                 name: MAIN_NAME[0],
                 deck: new Deck('deck_id_mainDeck', DECK_MAIN_SIZE, SUITS, RANKS),
-                score: 0
+                score: 0,
+                hasPlayedOne: false
             },
             cribDeck: {
                 name: CRIB_NAME[0],
@@ -45,13 +49,22 @@ function initGame() {
                 name: PLAYER_NAMES[0],
                 deck: new Deck('deck_id_player1Deck', DECK_PLAYER_SIZE, SUITS, RANKS),
                 score: 0,
-                corner: '#F08080'
+                corner: '#F08080',
+                hasSentToCrib: false,
+                hasPlayedOne: false
             },
             player2Deck: {
                 name: PLAYER_NAMES[1],
                 deck: new Deck('deck_id_player2Deck', DECK_PLAYER_SIZE, SUITS, RANKS),
                 score: 0,
-                corner: '#4169E1'
+                corner: '#4169E1',
+                hasSentToCrib: false,
+                hasPlayedOne: false
+            },
+            flipDeck: {
+                name: FLIP_NAME[0],
+                deck: new Deck('deck_id_flipDeck', DECK_FLIP_SIZE, SUITS, RANKS),
+                score: 0
             }
         };
 
@@ -79,45 +92,173 @@ function initGame() {
 }
 
 function runGame() {
-
     addCommentaryEntry('Clubbage Game Started.', 'game_success');
 
-    cornerSelection();
+    phaseCornerSelection();
 
-    while(gameState.round < 1) {
-        addCommentaryEntry('Shuffling Deck.', 'game_info');
-        shuffleDeck('deck_id_mainDeck', 'mainDeck');
-
-        addCommentaryEntry('Dealing cards to Fighters.', 'game_info');
-        dealToPlayers();
-
-        gameState.round++;
-        addCommentaryEntry(['Round ', { text: gameState.round }, '. ', { text: 'FIGHT!', bold: true, color: '#FF4500' }], 'game_info');
-
+    // TODO: need a while look for game rounds and phases.  For now, just step through each phase and have each phase call the next phase when it's done.
+    //while(gameState.round < 1) {
+        phaseCornerBreak();
         // test how the commentary section looks for various attacks.
-        addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '2 damage', underline: true }, '. [a pair]'], 'game_action');
-        addCommentaryEntry([{ text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' delivers a ', { text: 'hook', bold: true }, ' to ', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' for ', { text: '4 damage', underline: true }, '. [flush of four]'], 'game_action');
-        addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' sends an ', { text: 'uppercut', bold: true }, ' to ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '6 damage', underline: true }, '. [three of a kind]'], 'game_action');
-    }
-
+        //addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '2 damage', underline: true }, '. [a pair]'], 'game_action');
+        //addCommentaryEntry([{ text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' delivers a ', { text: 'hook', bold: true }, ' to ', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' for ', { text: '4 damage', underline: true }, '. [flush of four]'], 'game_action');
+        //addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' sends an ', { text: 'uppercut', bold: true }, ' to ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '6 damage', underline: true }, '. [three of a kind]'], 'game_action');
+    //}
 }
 
 // A coin is flipped at the start of a fight to determine which corner a player will get. If the Player guesses correctly, they will get the red/home corner. This means they'll start as "dealer" and gets the first crib.
-function cornerSelection() {
+function phaseCornerSelection() {
+    gameState.phase = 'cornerSelection';
+    addCommentaryEntry('PHASE: Corner Selection.', 'game_info');
     if (Math.random() < 0.5) {
         gameState.decks.player1Deck.corner = '#F08080';
         gameState.decks.player2Deck.corner = '#4169E1';
         addCommentaryEntry(['Flipping Coin...', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' won the coin flip and will take the ', { text: 'red', color: gameState.decks.player1Deck.corner }, ' corner! [', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' gets first crib]'], 'game_success');
+        gameState.cribOwner = 1;
+        gameState.decks.player1Deck.hasPlayedOne = true; // player is dealer; setup opponent to play a card first in the barrage phase.
+        gameState.decks.player2Deck.hasPlayedOne = false;
+        document.getElementById('deck_id_player1Deck').style.backgroundColor = '#F08080';
+        document.getElementById('deck_id_player2Deck').style.backgroundColor = '#4169E1';
     } else {
         gameState.decks.player1Deck.corner = '#4169E1';
         gameState.decks.player2Deck.corner = '#F08080';
         addCommentaryEntry(['Flipping Coin...', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' lost the coin flip and will take the ', { text: 'blue', color: gameState.decks.player1Deck.corner }, ' corner. [', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' gets first crib]'], 'game_success');
+        gameState.cribOwner = 2;
+        document.getElementById('deck_id_player1Deck').style.backgroundColor = '#4169E1';
+        document.getElementById('deck_id_player2Deck').style.backgroundColor = '#F08080';
+        gameState.decks.player1Deck.hasPlayedOne = false; // opponent is dealer. setup player to play a card first in the barrage phase.
+        gameState.decks.player2Deck.hasPlayedOne = true;
     }
 }
 
+function phaseCornerBreak() {
+    gameState.phase = 'cornerBreak';
+    addCommentaryEntry('PHASE: Corner Break.', 'game_info');
+    addCommentaryEntry('Shuffling Deck.', 'game_info');
+    shuffleDeck('deck_id_mainDeck', 'mainDeck');
+    addCommentaryEntry('Dealing cards to Fighters.', 'game_info');
+    dealToPlayers();
+    gameState.round++;
+}
+
+
 // function to handle when a mouse click event occurs on a card element to toggle a "selected" highlighting class.
+// if keeping gameState.phase, redo if/elseif so that the repeated code isn't repeated.
 function onCardClick(event) {
-    event.currentTarget.classList.toggle('selected');
+    const cardEl = event.currentTarget;
+    const deckId = cardEl.dataset.deckId;
+    const selectedCount = document.querySelectorAll(`.game_card.selected[data-deck-id="${deckId}"]`).length;
+    if (gameState.phase === 'cornerBreak') {
+        if (cardEl.classList.contains('selected')) {
+            // Always allow deselecting
+            cardEl.classList.remove('selected');
+        } else {
+            if (selectedCount < 2) {
+                cardEl.classList.add('selected');
+            } else {
+                // Already at 2 — shake the card to signal the limit
+                cardEl.classList.add('shake');
+                cardEl.addEventListener('animationend', () => cardEl.classList.remove('shake'), { once: true });
+                return;
+            }
+        }
+    } else if (gameState.phase === 'barrage') {
+        if (cardEl.classList.contains('selected')) {
+            // Always allow deselecting
+            cardEl.classList.remove('selected');
+        } else {
+            if (selectedCount < 1) {
+                cardEl.classList.add('selected');
+            } else {
+                // Already at 1 — shake the card to signal the limit
+                cardEl.classList.add('shake');
+                cardEl.addEventListener('animationend', () => cardEl.classList.remove('shake'), { once: true });
+                return;
+            }
+        }
+    } else {
+        cardEl.classList.toggle('selected');
+    }
+}
+
+function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = false) {
+    const fromDeck = gameState.decks[fromDeckName].deck;
+    const toDeck = gameState.decks[toDeckName].deck;
+    let cardsToSend = (numCards !== null) ? numCards : fromDeck.getCards().length;
+    const isBarrageFlipCutMove =
+        gameState.phase === 'barrage' &&
+        fromDeckName === 'mainDeck' &&
+        toDeckName === 'flipDeck' &&
+        !specificCards &&
+        cardsToSend === 1;
+    const selectedCardElements = (specificCards) ? Array.from(document.querySelectorAll(`.game_card.selected[data-deck-id="${fromDeck.id}"]`)) : [];
+    const numOfSpecificCards = selectedCardElements.length;
+    if (specificCards) {
+        cardsToSend = numOfSpecificCards;
+    }
+
+
+    if (specificCards && fromDeckName !== 'player1Deck' && fromDeckName !== 'player2Deck') {
+        console.log(
+            `%cInvalid move - specific card selection is only allowed from player decks. Attempted from: ${fromDeckName}.`,
+            'background: lightcoral; color: black; padding: 2px 4px;'
+        );
+        return;
+    }
+    if (gameState.phase !== 'cornerBreak' && gameState.phase !== 'barrage' ||
+        gameState.phase === 'cornerBreak' && gameState.decks[fromDeckName].hasSentToCrib ||
+        gameState.phase === 'cornerBreak' && toDeckName !== 'cribDeck' ||
+        gameState.phase === 'cornerBreak' && specificCards && numOfSpecificCards !== 2 ||
+        gameState.phase === 'barrage' && !isBarrageFlipCutMove && gameState.decks[fromDeckName].hasPlayedOne ||
+        gameState.phase === 'barrage' && !isBarrageFlipCutMove && specificCards && numOfSpecificCards !== 1 ||
+        gameState.phase === 'barrage' && !isBarrageFlipCutMove && toDeckName !== 'playDeck') {
+        console.log(
+            `%cInvalid move - ${cardsToSend} cards from: ${fromDeckName} (${gameState.decks[fromDeckName].hasPlayedOne}) | to: ${toDeckName} | phase: ${gameState.phase}.`,
+            'background: lightcoral; color: black; padding: 2px 4px;'
+        );
+        return;
+    } else {
+        console.log(
+            `%cConsidered Valid move - ${cardsToSend} cards from: ${fromDeckName} (${gameState.decks[fromDeckName].hasPlayedOne}) | to: ${toDeckName} | phase: ${gameState.phase}.`,
+            'background: lightgreen; color: black; padding: 2px 4px;'
+        );
+    }
+
+    if(gameState.phase === 'cornerBreak' && toDeckName === 'cribDeck') {
+        gameState.decks[fromDeckName].hasSentToCrib = true;
+    } else if(gameState.phase === 'barrage' && toDeckName === 'playDeck') {
+        gameState.decks[fromDeckName].hasPlayedOne = true;
+        // set the other player's hasPlayedOne to false
+        const otherPlayerDeckName = (fromDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
+        gameState.decks[otherPlayerDeckName].hasPlayedOne = false;
+    }
+
+    // pass specific selected cards or deal a number of cards from the top of the fromDeck to the toDeck.
+    if (specificCards) {
+        const selectedCards = selectedCardElements.map(cardElement => {
+            const cardId = cardElement.dataset.cardId;
+            return fromDeck.getCards().find(card => card.id === cardId);
+        });
+        console.log(`Specific cards selected to send from ${fromDeckName} to ${toDeckName}:`, selectedCards);
+        fromDeck.pass(toDeck, selectedCards);
+    } else {
+        fromDeck.deal([toDeck], [cardsToSend], 'top');
+    }
+    refreshDecks();
+
+    // if cribDeck has 4 cards, automatically move them to the playDeck and advance to the next phase.
+    if (gameState.phase === 'cornerBreak' && gameState.decks.cribDeck.deck.getCardCount() === DECK_CRIB_SIZE) {
+        addCommentaryEntry(['Round ', { text: gameState.round }, '. ', { text: 'FIGHT!', bold: true, color: '#FF4500' }], 'game_info');
+        phaseBarrage();
+    }
+
+}
+
+function phaseBarrage() {
+    gameState.phase = 'barrage';
+    // send card from mainDeck to flipDeck to simulate cutting the deck and revealing the starter card.
+    sendCards('mainDeck', 'flipDeck', 1, false);
+    addCommentaryEntry('PHASE: Barrage.', 'game_info');
 }
 
 function getSuitIconClass(suit) {
@@ -175,7 +316,7 @@ function refreshDecks() {
         showDeck(locationID, deckInfo.deck);
 
         // if deck is empty, disable the associated shuffle/sort/return/send buttons, otherwise enable them.
-        console.log(`Refreshing deck ${deckKey}. Card count: ${deckInfo.deck.getCardCount()}`);
+        //console.log(`Refreshing deck ${deckKey}. Card count: ${deckInfo.deck.getCardCount()}`);
         // remove the "Deck" suffix from the deckKey to get the base name for the button IDs. IE: "mainDeck" becomes "main", "player1Deck" becomes "player1", etc.
         const baseName = deckKey.replace('Deck', '');
         const shuffleButton = document.getElementById(`btn_${baseName}_shuffle`);
@@ -184,6 +325,7 @@ function refreshDecks() {
         const returnButton = document.getElementById(`btn_${baseName}_return_cards`);
         const dealCardsButton = document.getElementById(`btn_${baseName}_deal_cards`);
         const sendButton = document.getElementById(`btn_${baseName}_send`);
+
         if (deckInfo.deck.getCardCount() === 0) {
             if (shuffleButton) shuffleButton.disabled = true;
             if (sortSuitButton) sortSuitButton.disabled = true;
@@ -219,24 +361,6 @@ function dealToPlayers() {
     mainDeck.deal([player1Deck, player2Deck], [DECK_PLAYER_SIZE, DECK_PLAYER_SIZE], 'top');
     refreshDecks();
     console.log("Dealt cards to players. Current game state:", gameState);
-}
-
-function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = false) {
-    const fromDeck = gameState.decks[fromDeckName].deck;
-    const toDeck = gameState.decks[toDeckName].deck;
-    let cardsToSend = (numCards !== null) ? numCards : fromDeck.getCards().length;
-    // pass specific selected cards or deal a number of cards from the top of the fromDeck to the toDeck.
-    if (specificCards) {
-        cardsToSend = Array.from(document.querySelectorAll(`.game_card.selected[data-deck-id="${fromDeck.id}"]`)).map(cardElement => {
-            const cardId = cardElement.dataset.cardId;
-            return fromDeck.getCards().find(card => card.id === cardId);
-        });
-        console.log(`Specific cards selected to send from ${fromDeckName} to ${toDeckName}:`, cardsToSend);
-        fromDeck.pass(toDeck, cardsToSend);
-    } else {
-        fromDeck.deal([toDeck], [cardsToSend], 'top');
-    }
-    refreshDecks();
 }
 
 function addCommentaryEntry(parts, type = 'info') {

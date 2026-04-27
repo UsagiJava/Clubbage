@@ -56,3 +56,13 @@
     padding: 0.5rem 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+.game_commentary_log_entry.game_warning { color: #ffb347; }
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-4px); }
+    40%       { transform: translateX(4px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
+}
+.game_card.shake { animation: shake 0.3s ease; }
