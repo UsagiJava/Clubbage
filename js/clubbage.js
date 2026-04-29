@@ -17,9 +17,11 @@ let gameState = {
     running: false,
     decks: {},
     currentPlayer: 0,
-    round: 0,
+    round: 1,
     cribOwner: 1,
-    phase: 'cornerSelection'
+    phase: 'cornerSelection',
+    cornerBreakCompleteResolver: null,
+    barrageCompleteResolver: null
 };
 
 // Called by "Start Game" button.
@@ -91,21 +93,6 @@ function initGame() {
     }
 }
 
-function runGame() {
-    addCommentaryEntry('Clubbage Game Started.', 'game_success');
-
-    phaseCornerSelection();
-
-    // TODO: need a while look for game rounds and phases.  For now, just step through each phase and have each phase call the next phase when it's done.
-    //while(gameState.round < 1) {
-        phaseCornerBreak();
-        // test how the commentary section looks for various attacks.
-        //addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '2 damage', underline: true }, '. [a pair]'], 'game_action');
-        //addCommentaryEntry([{ text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' delivers a ', { text: 'hook', bold: true }, ' to ', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' for ', { text: '4 damage', underline: true }, '. [flush of four]'], 'game_action');
-        //addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' sends an ', { text: 'uppercut', bold: true }, ' to ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '6 damage', underline: true }, '. [three of a kind]'], 'game_action');
-    //}
-}
-
 // A coin is flipped at the start of a fight to determine which corner a player will get. If the Player guesses correctly, they will get the red/home corner. This means they'll start as "dealer" and gets the first crib.
 function phaseCornerSelection() {
     gameState.phase = 'cornerSelection';
@@ -131,14 +118,101 @@ function phaseCornerSelection() {
     }
 }
 
-function phaseCornerBreak() {
+async function runGame() {
+    addCommentaryEntry('Clubbage Game Started.', 'game_success');
+
+    // Each fight will start with a "Corner Selection" phase, and end with a "Training Montage" (increases hitpoints).  For now, just one opponent and no training for next fight.
+    phaseCornerSelection();
+
+    // Game loop will go through;
+    // 1) "Corner Break" phase. Fighters select what cards to pass to crib. Fighters can ask Trainer for advice on what to pass to crib.
+    // 2) "Round Start" phase. Bell Rings.
+    // 3) "Barrage" phase. Fighters alternate playing a card from their hand. blocks (if defender missed a punch last card), dodges (if a defender landed a punch last card), jabs (1-2 pts), hooks (3-4 pts), and uppercuts (5-6 pts) happen here.
+    // 4) "Closing the Round" phase. random block or dodge happens of 0 crib points scored, else a jab, hook, or uppercuts happens here.
+    // 5) "Round End" phase. Bell Rings. Increament round counter. Check for game end condition. If not end, loop back to "Corner Break" phase.
+
+    while(gameState.round <= 3) {
+        await phaseCornerBreak();
+        phaseRoundStart();
+        await phaseBarrage();
+        phaseClosingRound();
+        await phaseRoundEnd();
+    }
+    // test how the commentary section looks for various attacks.
+    // addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '2 damage', underline: true }, '. [a pair]'], 'game_action');
+    // addCommentaryEntry([{ text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' delivers a ', { text: 'hook', bold: true }, ' to ', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' for ', { text: '4 damage', underline: true }, '. [flush of four]'], 'game_action');
+    // addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' sends an ', { text: 'uppercut', bold: true }, ' to ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '6 damage', underline: true }, '. [three of a kind]'], 'game_action');
+}
+
+async function phaseCornerBreak() {
     gameState.phase = 'cornerBreak';
-    addCommentaryEntry('PHASE: Corner Break.', 'game_info');
-    addCommentaryEntry('Shuffling Deck.', 'game_info');
+    gameState.decks.player1Deck.hasSentToCrib = false;
+    gameState.decks.player2Deck.hasSentToCrib = false;
+    addCommentaryEntry('[Corner Break] start.', 'game_info');
+    addCommentaryEntry('[Corner Break] shuffling deck.', 'game_info');
     shuffleDeck('deck_id_mainDeck', 'mainDeck');
-    addCommentaryEntry('Dealing cards to Fighters.', 'game_info');
+    addCommentaryEntry('[Corner Break] dealing cards to fighters.', 'game_info');
     dealToPlayers();
+    await waitPhaseCornerBreakComplete();
+}
+    function waitPhaseCornerBreakComplete() {
+        if (isCornerBreakComplete()) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+            gameState.cornerBreakCompleteResolver = resolve;
+        });
+    }
+        function isCornerBreakComplete() {
+            return gameState.phase === 'cornerBreak' &&
+                gameState.decks.player1Deck.hasSentToCrib &&
+                gameState.decks.player2Deck.hasSentToCrib &&
+                gameState.decks.cribDeck.deck.getCardCount() === DECK_CRIB_SIZE;
+        }
+
+function phaseRoundStart() {
+    gameState.phase = 'roundStart';
+    addCommentaryEntry(['[Round Start] Round ', { text: gameState.round }, '. Bell rings. FIGHT!'], 'game_info');
+}
+
+async function phaseBarrage() {
+    gameState.phase = 'barrage';
+    // send card from mainDeck to flipDeck to simulate cutting the deck and revealing the starter card.
+    sendCards('mainDeck', 'flipDeck', 1, false);
+    addCommentaryEntry('[Barrage] start.', 'game_info');
+    await waitPhaseBarrageComplete();
+}
+    function waitPhaseBarrageComplete() {
+        if (isBarrageComplete()) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+            gameState.barrageCompleteResolver = resolve;
+        });
+    }
+        function isBarrageComplete() {
+            return gameState.phase === 'barrage' &&
+                gameState.decks.playDeck.deck.getCardCount() === DECK_PLAY_SIZE;
+        }
+
+function phaseClosingRound() {
+    gameState.phase = 'closingRound';
+    addCommentaryEntry('[Closing Round] start.', 'game_info');
+}
+
+async function phaseRoundEnd() {
+    gameState.phase = 'roundEnd';
+    addCommentaryEntry(['[Round End] Round ', { text: gameState.round }, '. Bell rings. Back to corners.'], 'game_info');
+    // send all cards from playDeck, flipDeck, cribDeck back to mainDeck to simulate gathering up the cards and returning them to the main deck.
+    sendCards('playDeck', 'mainDeck', DECK_PLAY_SIZE, false);
+    sendCards('flipDeck', 'mainDeck', DECK_FLIP_SIZE, false);
+    sendCards('cribDeck', 'mainDeck', DECK_CRIB_SIZE, false);
     gameState.round++;
+    // change the crib owner for the next round.
+    gameState.cribOwner = (gameState.cribOwner === 1) ? 2 : 1;
+    // reset hasPlayedOne for both players for the next round so that non-dealer has to play first during barrage phase.
+    gameState.decks.player1Deck.hasPlayedOne = (gameState.cribOwner === 1);
+    gameState.decks.player2Deck.hasPlayedOne = (gameState.cribOwner === 2);
 }
 
 
@@ -182,52 +256,71 @@ function onCardClick(event) {
 }
 
 function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = false) {
-    const fromDeck = gameState.decks[fromDeckName].deck;
-    const toDeck = gameState.decks[toDeckName].deck;
-    let cardsToSend = (numCards !== null) ? numCards : fromDeck.getCards().length;
-    const isBarrageFlipCutMove =
-        gameState.phase === 'barrage' &&
-        fromDeckName === 'mainDeck' &&
-        toDeckName === 'flipDeck' &&
-        !specificCards &&
-        cardsToSend === 1;
-    const selectedCardElements = (specificCards) ? Array.from(document.querySelectorAll(`.game_card.selected[data-deck-id="${fromDeck.id}"]`)) : [];
+    const gsFromDeckProps = gameState.decks[fromDeckName];
+    const phase = gameState.phase;
+    const gsFromDeckPropsDeck = gsFromDeckProps.deck;
+    const gsToDeckPropsDeck = gameState.decks[toDeckName].deck;
+    const isPlayerDeck = fromDeckName === 'player1Deck' || fromDeckName === 'player2Deck';
+    const selectedCardElements = specificCards ? Array.from(document.querySelectorAll(`.game_card.selected[data-deck-id="${gsFromDeckPropsDeck.id}"]`)) : [];
     const numOfSpecificCards = selectedCardElements.length;
-    if (specificCards) {
-        cardsToSend = numOfSpecificCards;
-    }
-
-
-    if (specificCards && fromDeckName !== 'player1Deck' && fromDeckName !== 'player2Deck') {
-        console.log(
-            `%cInvalid move - specific card selection is only allowed from player decks. Attempted from: ${fromDeckName}.`,
-            'background: lightcoral; color: black; padding: 2px 4px;'
-        );
-        return;
-    }
-    if (gameState.phase !== 'cornerBreak' && gameState.phase !== 'barrage' ||
-        gameState.phase === 'cornerBreak' && gameState.decks[fromDeckName].hasSentToCrib ||
-        gameState.phase === 'cornerBreak' && toDeckName !== 'cribDeck' ||
-        gameState.phase === 'cornerBreak' && specificCards && numOfSpecificCards !== 2 ||
-        gameState.phase === 'barrage' && !isBarrageFlipCutMove && gameState.decks[fromDeckName].hasPlayedOne ||
-        gameState.phase === 'barrage' && !isBarrageFlipCutMove && specificCards && numOfSpecificCards !== 1 ||
-        gameState.phase === 'barrage' && !isBarrageFlipCutMove && toDeckName !== 'playDeck') {
-        console.log(
-            `%cInvalid move - ${cardsToSend} cards from: ${fromDeckName} (${gameState.decks[fromDeckName].hasPlayedOne}) | to: ${toDeckName} | phase: ${gameState.phase}.`,
-            'background: lightcoral; color: black; padding: 2px 4px;'
-        );
-        return;
+    const cardsToSend = specificCards ? numOfSpecificCards : (numCards !== null ? numCards : gsFromDeckPropsDeck.getCards().length);
+    const isBarrageFlipCutMove = phase === 'barrage' && fromDeckName === 'mainDeck' &&
+                                 toDeckName === 'flipDeck' && !specificCards && cardsToSend === 1;
+    const isRoundEndGatherMove = phase === 'roundEnd' && toDeckName === 'mainDeck' && !specificCards &&
+                                 (fromDeckName === 'playDeck' || fromDeckName === 'flipDeck' || fromDeckName === 'cribDeck');
+    let invalidReason = null;
+    if (specificCards && !isPlayerDeck) {
+        invalidReason = `specific card selection is only allowed from player decks. Attempted from: ${fromDeckName}.`;
     } else {
-        console.log(
-            `%cConsidered Valid move - ${cardsToSend} cards from: ${fromDeckName} (${gameState.decks[fromDeckName].hasPlayedOne}) | to: ${toDeckName} | phase: ${gameState.phase}.`,
-            'background: lightgreen; color: black; padding: 2px 4px;'
-        );
+        switch (phase) {
+        case 'cornerBreak':
+            if (gsFromDeckProps.hasSentToCrib) {
+                invalidReason = `${fromDeckName} already sent cards to the crib.`;
+            } else if (toDeckName !== 'cribDeck') {
+                invalidReason = `cornerBreak cards must be sent to cribDeck, not ${toDeckName}.`;
+            } else if (specificCards && numOfSpecificCards !== 2) {
+                invalidReason = `cornerBreak requires exactly 2 selected cards, got ${numOfSpecificCards}.`;
+            }
+            break;
+        case 'barrage':
+            if (!isBarrageFlipCutMove) {
+                if (gsFromDeckProps.hasPlayedOne) {
+                    invalidReason = `${fromDeckName} already played this barrage turn.`;
+                } else if (toDeckName !== 'playDeck') {
+                    invalidReason = `barrage cards must be sent to playDeck, not ${toDeckName}.`;
+                } else if (specificCards && numOfSpecificCards !== 1) {
+                    invalidReason = `barrage requires exactly 1 selected card, got ${numOfSpecificCards}.`;
+                }
+            }
+            break;
+        case 'roundEnd':
+            if (!isRoundEndGatherMove) {
+                invalidReason = `roundEnd only allows playDeck, flipDeck, or cribDeck to return to mainDeck.`;
+            }
+            break;
+        default:
+            invalidReason = `phase ${phase} does not allow sendCards moves.`;
+            break;
+        }
     }
 
-    if(gameState.phase === 'cornerBreak' && toDeckName === 'cribDeck') {
-        gameState.decks[fromDeckName].hasSentToCrib = true;
-    } else if(gameState.phase === 'barrage' && toDeckName === 'playDeck') {
-        gameState.decks[fromDeckName].hasPlayedOne = true;
+    if (invalidReason) {
+        console.log(
+            `%cInvalid move - ${cardsToSend} cards from: ${fromDeckName} (${gsFromDeckProps.hasPlayedOne ?? 'n/a'}) | to: ${toDeckName} | phase: ${phase}. ${invalidReason}`,
+            'background: lightcoral; color: black; padding: 2px 4px;'
+        );
+        return;
+    }
+
+    console.log(
+        `%cConsidered Valid move - ${cardsToSend} cards from: ${fromDeckName} (${gsFromDeckProps.hasPlayedOne ?? 'n/a'}) | to: ${toDeckName} | phase: ${phase}.`,
+        'background: lightgreen; color: black; padding: 2px 4px;'
+    );
+
+    if (phase === 'cornerBreak' && toDeckName === 'cribDeck') {
+        gsFromDeckProps.hasSentToCrib = true;
+    } else if (phase === 'barrage' && toDeckName === 'playDeck') {
+        gsFromDeckProps.hasPlayedOne = true;
         // set the other player's hasPlayedOne to false
         const otherPlayerDeckName = (fromDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
         gameState.decks[otherPlayerDeckName].hasPlayedOne = false;
@@ -237,28 +330,32 @@ function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = fa
     if (specificCards) {
         const selectedCards = selectedCardElements.map(cardElement => {
             const cardId = cardElement.dataset.cardId;
-            return fromDeck.getCards().find(card => card.id === cardId);
+            return gsFromDeckPropsDeck.getCards().find(card => card.id === cardId);
         });
         console.log(`Specific cards selected to send from ${fromDeckName} to ${toDeckName}:`, selectedCards);
-        fromDeck.pass(toDeck, selectedCards);
+        gsFromDeckPropsDeck.pass(gsToDeckPropsDeck, selectedCards);
     } else {
-        fromDeck.deal([toDeck], [cardsToSend], 'top');
+        gsFromDeckPropsDeck.deal([gsToDeckPropsDeck], [cardsToSend], 'top');
     }
     refreshDecks();
 
-    // if cribDeck has 4 cards, automatically move them to the playDeck and advance to the next phase.
-    if (gameState.phase === 'cornerBreak' && gameState.decks.cribDeck.deck.getCardCount() === DECK_CRIB_SIZE) {
-        addCommentaryEntry(['Round ', { text: gameState.round }, '. ', { text: 'FIGHT!', bold: true, color: '#FF4500' }], 'game_info');
-        phaseBarrage();
+    // Corner break is complete once both players pass 2 cards into the crib.
+    if (isCornerBreakComplete()) {
+        addCommentaryEntry(['Round ', { text: gameState.round }, '. Corner Break complete.'], 'game_info');
+        if (gameState.cornerBreakCompleteResolver) {
+            gameState.cornerBreakCompleteResolver();
+            gameState.cornerBreakCompleteResolver = null;
+        }
+    }
+    // Barrage is complete once players have alternated playing cards into the playDeck until there are 8 cards in the playDeck.
+    if (isBarrageComplete()) {
+        addCommentaryEntry(['Round ', { text: gameState.round }, '. Barrage complete.'], 'game_info');
+        if (gameState.barrageCompleteResolver) {
+            gameState.barrageCompleteResolver();
+            gameState.barrageCompleteResolver = null;
+        }
     }
 
-}
-
-function phaseBarrage() {
-    gameState.phase = 'barrage';
-    // send card from mainDeck to flipDeck to simulate cutting the deck and revealing the starter card.
-    sendCards('mainDeck', 'flipDeck', 1, false);
-    addCommentaryEntry('PHASE: Barrage.', 'game_info');
 }
 
 function getSuitIconClass(suit) {
