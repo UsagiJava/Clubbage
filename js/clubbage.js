@@ -24,6 +24,24 @@ let gameState = {
     barrageCompleteResolver: null
 };
 
+
+document.getElementById('btn_player1_send').addEventListener('click', setTargetDeckForSend);
+document.getElementById('btn_player2_send').addEventListener('click', setTargetDeckForSend);
+
+
+function setTargetDeckForSend(event) {
+    // check gameState.phase to determine which deck to send cards to (cribDeck during cornerBreak, playDeck during barrage).
+    const phase = gameState.phase;
+    let targetDeckName = (gameState.phase === 'cornerBreak') ? 'cribDeck' : (gameState.phase === 'barrage') ? 'playDeck' : null;
+    if (!targetDeckName) {
+        console.warn(`Send button should not be active during phase: ${phase}`);
+        return;
+    } else {
+        const fromDeckName = event.currentTarget.id.includes('player1') ? 'player1Deck' : 'player2Deck';
+        sendCards(fromDeckName, targetDeckName, null, true);
+    }
+}
+
 // Called by "Start Game" button.
 function initGame() {
     if(!gameState.running) {
@@ -387,15 +405,28 @@ function getRunValue(rank) {
     return parseInt(rank);
 }
 
+function setCardOwner(deckName, cards) {
+    const ownerName = gameState.decks[deckName]?.name ?? '';
+    const ownerCorner = gameState.decks[deckName]?.corner ?? '';
+    for (const card of cards) {
+        card.ownerDeck = deckName;
+        card.ownerName = ownerName;
+        card.ownerCorner = ownerCorner;
+    }
+}
+
 function showDeck(locationID, deck) {
     const location = document.getElementById(locationID);
     location.innerHTML = '';
     for (const card of deck.getCards()) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'game_card';
-        cardDiv.setAttribute('title', `ID: ${card.id}\nPeg Value: ${card.pegValue}\nRun Value: ${card.runValue}\nSuit Order: ${deck.suitOrder[card.suit]}\nRank Order: ${deck.rankOrder[card.rank]}`);
+        cardDiv.setAttribute('title', `ID: ${card.id}\nOwner: ${card.ownerName ?? 'Unassigned'}\nOwner Corner: ${card.ownerCorner ?? 'n/a'}\nPeg Value: ${card.pegValue}\nRun Value: ${card.runValue}\nSuit Order: ${deck.suitOrder[card.suit]}\nRank Order: ${deck.rankOrder[card.rank]}`);
         cardDiv.dataset.cardId = card.id;
         cardDiv.dataset.deckId = deck.id;
+        cardDiv.dataset.ownerDeck = card.ownerDeck ?? '';
+        cardDiv.dataset.ownerName = card.ownerName ?? '';
+        cardDiv.dataset.ownerCorner = card.ownerCorner ?? '';
         // take the deck.id and remove the "deck_id_" prefix and the "Deck" suffix.
         const btnId = deck.id.replace('deck_id_', '').replace('Deck', '');
         cardDiv.dataset.sendBtnId = `btn_${btnId}_send`; // the card now contains data on which "Send" button it is associated with.
@@ -403,6 +434,9 @@ function showDeck(locationID, deck) {
         cardDiv.innerHTML = `<div class="game_card_rank">${card.rank}</div><i class="bi ${suitIconClass} d-block" aria-label="${card.suit}"></i>`;
         cardDiv.addEventListener('click', onCardClick);
         location.appendChild(cardDiv);
+    }
+    if (locationID === 'deck_id_mainDeck' && deck.getCardCount() > 0) {
+        location.classList.add('d-none');
     }
 }
 
@@ -419,7 +453,6 @@ function refreshDecks() {
         const shuffleButton = document.getElementById(`btn_${baseName}_shuffle`);
         const sortSuitButton = document.getElementById(`btn_${baseName}_sort_suit`);
         const sortValueButton = document.getElementById(`btn_${baseName}_sort_value`);
-        const returnButton = document.getElementById(`btn_${baseName}_return_cards`);
         const dealCardsButton = document.getElementById(`btn_${baseName}_deal_cards`);
         const sendButton = document.getElementById(`btn_${baseName}_send`);
 
@@ -427,15 +460,11 @@ function refreshDecks() {
             if (shuffleButton) shuffleButton.disabled = true;
             if (sortSuitButton) sortSuitButton.disabled = true;
             if (sortValueButton) sortValueButton.disabled = true;
-            if (returnButton) returnButton.disabled = true;
-            if (dealCardsButton) dealCardsButton.disabled = true;
             if (sendButton) sendButton.disabled = true;
         } else {
             if (shuffleButton) shuffleButton.disabled = false;
             if (sortSuitButton) sortSuitButton.disabled = false;
             if (sortValueButton) sortValueButton.disabled = false;
-            if (returnButton) returnButton.disabled = false;
-            if (dealCardsButton) dealCardsButton.disabled = false;
             if (sendButton) sendButton.disabled = false;
         }
     }
@@ -456,6 +485,8 @@ function dealToPlayers() {
     const player1Deck = gameState.decks.player1Deck.deck;
     const player2Deck = gameState.decks.player2Deck.deck;
     mainDeck.deal([player1Deck, player2Deck], [DECK_PLAYER_SIZE, DECK_PLAYER_SIZE], 'top');
+    setCardOwner('player1Deck', player1Deck.getCards());
+    setCardOwner('player2Deck', player2Deck.getCards());
     refreshDecks();
     console.log("Dealt cards to players. Current game state:", gameState);
 }

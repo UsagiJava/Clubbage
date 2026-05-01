@@ -15,117 +15,53 @@
             </div>
         </div>
         <div class="row bg-primary-subtle">
-            <div class="col-12"><h5>Main Deck</h5></div>
-            <div class="col-12 col-md-2">
+            <div class="col-12 text-center">
                 <button id="btn_main_start" class="btn btn-primary" onclick="initGame()">Start</button>
             </div>
-            <div class="col-12 col-md-10">
+            <div class="col-12">
                 <div id="deck_id_mainDeck"></div>
-            </div>
-            <div class="col-12 col-md-10 offset-md-2 d-flex align-items-center gap-2 flex-wrap mb-2">
-                <button id="btn_main_shuffle" class="btn btn-primary text-nowrap" onclick="shuffleDeck('deck_id_mainDeck', 'mainDeck')" disabled="disabled">Shuffle</button>
-                <button id="btn_main_sort_suit" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_mainDeck', 'mainDeck','suit-value')" disabled="disabled">Sort Suit</button>
-                <button id="btn_main_sort_value" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_mainDeck', 'mainDeck','value')" disabled="disabled">Sort Value</button>
-                <div class="input-group w-auto flex-nowrap">
-                    <select id="select_mainDeck_send" class="form-select" aria-label="Select deck to send cards to">
-                        <option value="" selected disabled>Send To...</option>
-                        <option value="cribDeck">Crib Deck</option>
-                        <option value="player2Deck">Player 2 Deck</option>
-                        <option value="playDeck">Play Deck</option>
-                        <option value="player1Deck">Player 1 Deck</option>
-                    </select>
-                    <button id="btn_main_send" class="btn btn-primary text-nowrap" type="button" onclick="sendCards('mainDeck', document.getElementById('select_mainDeck_send').value, null, true)" disabled="disabled">Send</button>
-                </div>
-                <button id="btn_main_deal_cards" class="btn btn-primary text-nowrap" onclick="dealToPlayers()" disabled="disabled">Deal Cards</button>
             </div>
         </div>
 
         <div class="row bg-secondary-subtle">
-            <div class="col-12 col-md-2"><h5>Flip Deck</h5></div>
-            <div class="col-12 col-md-10">
+            <div class="col-12">
                 <div id="deck_id_flipDeck"></div>
-            </div>
-            <div class="col-12 col-md-10 offset-md-2 d-flex align-items-center gap-2 flex-wrap mb-2">
-                <button id="btn_flip_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('flipDeck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>
         </div>
 
         <div class="row bg-primary-subtle">
-            <div class="col-12 col-md-2"><h5>Crib Deck</h5></div>
-            <div class="col-12 col-md-10">
+            <div class="col-12">
                 <div id="deck_id_cribDeck"></div>
-            </div>
-            <div class="col-12 col-md-10 offset-md-2 d-flex align-items-center gap-2 flex-wrap mb-2">
-                <button id="btn_crib_shuffle" class="btn btn-primary text-nowrap" onclick="shuffleDeck('deck_id_cribDeck', 'cribDeck')" disabled="disabled">Shuffle</button>
-                <button id="btn_crib_sort_suit" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_cribDeck', 'cribDeck','suit-value')" disabled="disabled">Sort Suit</button>
-                <button id="btn_crib_sort_value" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_cribDeck', 'cribDeck','value')" disabled="disabled">Sort Value</button>
-                <div class="input-group w-auto flex-nowrap">
-                    <select id="select_crib_send" class="form-select" aria-label="Select deck to send cards to">
-                        <option value="" selected disabled>Send To...</option>
-                        <option value="mainDeck">Main Deck</option>
-                        <option value="player2Deck">Player 2 Deck</option>
-                        <option value="playDeck">Play Deck</option>
-                        <option value="player1Deck">Player 1 Deck</option>
-                    </select>
-                    <button id="btn_crib_send" class="btn btn-primary text-nowrap" type="button" onclick="sendCards('cribDeck', document.getElementById('select_crib_send').value, null, true)" disabled="disabled">Send</button>
-                </div>
-                <button id="btn_crib_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('cribDeck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>
         </div>
 
         <div class="row bg-secondary-subtle">
-            <div class="col-12 col-md-2"><h5>Player 2 Deck</h5></div>
-            <div class="col-12 col-md-10">
+            <div class="col-12">
                 <div id="deck_id_player2Deck"></div>
             </div>
-            <div class="col-12 col-md-10 offset-md-2 d-flex align-items-center gap-2 flex-wrap mb-2">
+            <div id="deck_id_player2Deck_controls" class="col-12 d-flex align-items-center gap-2 flex-wrap my-2">
                 <button id="btn_player2_shuffle" class="btn btn-primary text-nowrap" onclick="shuffleDeck('deck_id_player2Deck', 'player2Deck')" disabled="disabled">Shuffle</button>
                 <button id="btn_player2_sort_suit" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player2Deck', 'player2Deck','suit-value')" disabled="disabled">Sort Suit</button>
                 <button id="btn_player2_sort_value" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player2Deck', 'player2Deck','value')" disabled="disabled">Sort Value</button>
-                <div class="input-group w-auto flex-nowrap">
-                    <select id="select_player2_send" class="form-select" aria-label="Select deck to send cards to">
-                        <option value="" selected disabled>Send To...</option>
-                        <option value="mainDeck">Main Deck</option>
-                        <option value="cribDeck">Crib Deck</option>
-                        <option value="playDeck">Play Deck</option>
-                        <option value="player1Deck">Player 1 Deck</option>
-                    </select>
-                    <button id="btn_player2_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled" onclick="sendCards('player2Deck', document.getElementById('select_player2_send').value, null, true)">Send</button>
-                </div>
-                <button id="btn_player2_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('player2Deck', 'mainDeck')" disabled="disabled">Return Cards</button>
+                <button id="btn_player2_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
             </div>
         </div>
 
         <div class="row bg-primary-subtle">
-            <div class="col-12 col-md-2"><h5>Play Deck</h5></div>
-            <div class="col-12 col-md-10">
+            <div class="col-12">
                 <div id="deck_id_playDeck"></div>
-            </div>
-            <div class="col-12 col-md-10 offset-md-2 d-flex align-items-center gap-2 flex-wrap mb-2">
-                <button id="btn_play_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('playDeck', 'mainDeck')" disabled="disabled">Return Cards</button>
             </div>
         </div>
 
         <div class="row bg-secondary-subtle">
-            <div class="col-12 col-md-2"><h5>Player 1 Deck</h5></div>
-            <div class="col-12 col-md-10">
+            <div class="col-12">
                 <div id="deck_id_player1Deck"></div>
             </div>
-            <div class="col-12 col-md-10 offset-md-2 d-flex align-items-center gap-2 flex-wrap mb-2">
+            <div id="deck_id_player1Deck_controls" class="col-12 d-flex align-items-center gap-2 flex-wrap my-2">
                 <button id="btn_player1_shuffle" class="btn btn-primary text-nowrap" onclick="shuffleDeck('deck_id_player1Deck', 'player1Deck')" disabled="disabled">Shuffle</button>
                 <button id="btn_player1_sort_suit" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player1Deck', 'player1Deck','suit-value')" disabled="disabled">Sort Suit</button>
                 <button id="btn_player1_sort_value" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player1Deck', 'player1Deck','value')" disabled="disabled">Sort Value</button>
-                <div class="input-group w-auto flex-nowrap">
-                    <select id="select_player1_send" class="form-select" aria-label="Select deck to send cards to">
-                        <option value="" selected disabled>Send To...</option>
-                        <option value="mainDeck">Main Deck</option>
-                        <option value="cribDeck">Crib Deck</option>
-                        <option value="player2Deck">Player 2 Deck</option>
-                        <option value="playDeck">Play Deck</option>
-                    </select>
-                    <button id="btn_player1_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled" onclick="sendCards('player1Deck', document.getElementById('select_player1_send').value, null, true)">Send</button>
-                </div>
-                <button id="btn_player1_return_cards" class="btn btn-primary text-nowrap" onclick="sendCards('player1Deck', 'mainDeck')" disabled="disabled">Return Cards</button>
+                <button id="btn_player1_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
             </div>
         </div>
 

@@ -15,8 +15,24 @@
     max-height: 100%;
 }
 
+#deck_id_player2Deck {
+    border-radius: 6px 6px 0 0;
+    display: flex;
+    justify-content: center;
+}
+
+#deck_id_player1Deck {
+    border-radius: 0 0 6px 6px;
+    display: flex;
+    justify-content: center;
+}
+#deck_id_player1Deck_controls, #deck_id_player2Deck_controls {
+    justify-content: center;
+}
+
 #deck_id_mainDeck {
     max-width: 650px; /* only here to provide 13 cards per row so the suits look good stacked on the main deck.  Remove later when the main deck is a stack of cards. */
+    position: relative;
 }
 
 .game_card {
@@ -38,6 +54,12 @@
     border-color: #c99908;
     background-color: #fff3cd;
 }
+
+#deck_id_playDeck .game_card[data-owner-corner="#4169E1"],
+#deck_id_cribDeck .game_card[data-owner-corner="#4169E1"] { border-color: #4169E1; }
+#deck_id_playDeck .game_card[data-owner-corner="#F08080"],
+#deck_id_cribDeck .game_card[data-owner-corner="#F08080"] { border-color: #F08080; }
+
 
 .game_commentary_row { background-color: #111827; }
 .game_commentary_log_entry.game_action { color: #ffda6a; }
