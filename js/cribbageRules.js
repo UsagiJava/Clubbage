@@ -4,35 +4,100 @@
 
 // hand = array of card objects, starter = single card object
 export function scoreFifteens(hand, starter) {
-    // TODO: generate every subset of the 5-card group (hand + starter),
-    // sum pegValues, award 2 pts per subset that totals 15.
-    return 0;
+    const cards = [...(hand ?? []), starter].filter(Boolean);
+    let points = 0;
+    const totalSubsets = 1 << cards.length;
+
+    for (let mask = 1; mask < totalSubsets; mask++) {
+        let sum = 0;
+        for (let i = 0; i < cards.length; i++) {
+            if (mask & (1 << i)) sum += cards[i].pegValue;
+        }
+        if (sum === 15) points += 2;
+    }
+
+    return points;
 }
 
 // hand = array of card objects, starter = single card object
 export function scorePairs(hand, starter) {
-    // TODO: count rank matches across all 5 cards,
-    // award 2 pts per unique pair combination. 3 = 6 pts, 4 = 12 pts.
-    return 0;
+    const cards = [...(hand ?? []), starter].filter(Boolean);
+    const rankCounts = new Map();
+
+    for (const card of cards) {
+        const count = rankCounts.get(card.rank) ?? 0;
+        rankCounts.set(card.rank, count + 1);
+    }
+
+    let points = 0;
+    for (const count of rankCounts.values()) {
+        if (count >= 2) points += (count * (count - 1));
+    }
+
+    return points;
 }
 
 // hand = array of card objects, starter = single card object
 export function scoreRuns(hand, starter) {
-    // TODO: find the longest run(s) among the 5 cards.
-    // Handle double/triple runs caused by pairs within the run.
-    return 0;
+    const cards = [...(hand ?? []), starter].filter(Boolean);
+    if (cards.length < 3) return 0;
+
+    const valueCounts = new Map();
+    for (const card of cards) {
+        const count = valueCounts.get(card.runValue) ?? 0;
+        valueCounts.set(card.runValue, count + 1);
+    }
+
+    const uniqueValues = Array.from(valueCounts.keys()).sort((a, b) => a - b);
+    let bestRunLen = 0;
+    let points = 0;
+
+    let i = 0;
+    while (i < uniqueValues.length) {
+        let j = i;
+        while (j + 1 < uniqueValues.length && uniqueValues[j + 1] === uniqueValues[j] + 1) {
+            j++;
+        }
+
+        const runLen = j - i + 1;
+        if (runLen >= 3) {
+            let multiplicity = 1;
+            for (let k = i; k <= j; k++) {
+                multiplicity *= valueCounts.get(uniqueValues[k]);
+            }
+
+            if (runLen > bestRunLen) {
+                bestRunLen = runLen;
+                points = runLen * multiplicity;
+            } else if (runLen === bestRunLen) {
+                points += runLen * multiplicity;
+            }
+        }
+
+        i = j + 1;
+    }
+
+    return points;
 }
 
 // hand = array of card objects, starter = single card object, isCrib = boolean if scoring the crib
 export function scoreFlush(hand, starter, isCrib = false) {
-    // TODO: check for 4 or more of same suit in hand, and if crib, needs 5 of the same suit to score.
-    return 0;
+    if (!Array.isArray(hand) || hand.length === 0) return 0;
+
+    const handSuit = hand[0]?.suit;
+    if (!handSuit) return 0;
+    const allHandSameSuit = hand.every(card => card?.suit === handSuit);
+    if (!allHandSameSuit) return 0;
+
+    const starterMatches = starter?.suit === handSuit;
+    if (isCrib) return starterMatches ? 5 : 0;
+    return starterMatches ? 5 : 4;
 }
 
 // hand = array of card objects, starter = single card object
 export function scoreNobs(hand, starter) {
-    // TODO: find a Jack in hand with suit === starter.suit. Award 1 pt if found else 0.
-    return 0;
+    if (!starter || !Array.isArray(hand)) return 0;
+    return hand.some(card => card.rank === 'J' && card.suit === starter.suit) ? 1 : 0;
 }
 
 // run all show-phase scoring and return a breakdown.

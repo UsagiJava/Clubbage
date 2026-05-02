@@ -241,9 +241,79 @@ function isBarrageComplete() {
         gameState.decks.playDeck.deck.getCardCount() === DECK_PLAY_SIZE;
 }
 
+function describeShowScoring(result) {
+    const reasons = [];
+    if (result.fifteens > 0) reasons.push(`fifteens (${result.fifteens})`);
+    if (result.pairs > 0) reasons.push(`pairs (${result.pairs})`);
+    if (result.runs > 0) reasons.push(`runs (${result.runs})`);
+    if (result.flush > 0) reasons.push(`flush (${result.flush})`);
+    if (result.nobs > 0) reasons.push(`nobs (${result.nobs})`);
+    return reasons.length > 0 ? reasons.join(', ') : 'no score';
+}
+
+function applyClosingRoundScore(scoringDeckName, points, reasonLabel) {
+    if (points <= 0) return;
+
+    const scoringDeck = gameState.decks[scoringDeckName];
+    const otherPlayerDeckName = scoringDeckName === 'player1Deck' ? 'player2Deck' : 'player1Deck';
+    const otherPlayerDeck = gameState.decks[otherPlayerDeckName];
+
+    scoringDeck.score += points;
+    applyDamageToPlayer(otherPlayerDeckName, points);
+
+    const attackName = points <= 2 ? 'jab' : points <= 4 ? 'hook' : 'uppercut';
+    addCommentaryEntry([
+        { text: scoringDeck.name, italic: true, color: scoringDeck.corner },
+        attackName === 'jab' ? ' lands a ' : attackName === 'hook' ? ' delivers a ' : ' sends an ',
+        { text: attackName, bold: true },
+        attackName === 'jab' ? ' on ' : ' to ',
+        { text: otherPlayerDeck.name, italic: true, color: otherPlayerDeck.corner },
+        ' for ',
+        { text: `${points} damage`, underline: true },
+        `. [${reasonLabel}]`
+    ], 'game_action');
+}
+
+function scoreClosingRoundHands() {
+    const starterCard = gameState.decks.flipDeck.deck.getCards()[0];
+    if (!starterCard) {
+        addCommentaryEntry('[Closing Round] no starter card in flip deck; skipping hand scoring.', 'game_warning');
+        return;
+    }
+
+    const playCards = gameState.decks.playDeck.deck.getCards();
+    const player1Hand = playCards.filter(card => card.ownerDeck === 'player1Deck');
+    const player2Hand = playCards.filter(card => card.ownerDeck === 'player2Deck');
+
+    if (player1Hand.length !== 4 || player2Hand.length !== 4) {
+        addCommentaryEntry(
+            `[Closing Round] expected 4 cards per player in play deck, found ${player1Hand.length} and ${player2Hand.length}.`,
+            'game_warning'
+        );
+    }
+
+    const nonDealerDeckName = gameState.cribOwner === 1 ? 'player2Deck' : 'player1Deck';
+    const dealerDeckName = gameState.cribOwner === 1 ? 'player1Deck' : 'player2Deck';
+
+    const scoringOrder = [
+        { deckName: nonDealerDeckName, hand: nonDealerDeckName === 'player1Deck' ? player1Hand : player2Hand, label: 'hand' },
+        { deckName: dealerDeckName, hand: dealerDeckName === 'player1Deck' ? player1Hand : player2Hand, label: 'hand' }
+    ];
+
+    for (const item of scoringOrder) {
+        const result = cribbageRules.scoreHand(item.hand, starterCard, false);
+        applyClosingRoundScore(item.deckName, result.total, `${item.label}: ${describeShowScoring(result)}`);
+    }
+
+    const cribCards = gameState.decks.cribDeck.deck.getCards();
+    const cribResult = cribbageRules.scoreHand(cribCards, starterCard, true);
+    applyClosingRoundScore(dealerDeckName, cribResult.total, `crib: ${describeShowScoring(cribResult)}`);
+}
+
 function phaseClosingRound() {
     gameState.phase = 'closingRound';
-    addCommentaryEntry('[Closing Round] start.', 'game_info');
+    addCommentaryEntry('Bell is about to ring. Close the round strong!', 'game_info');
+    scoreClosingRoundHands();
 }
 
 async function phaseRoundEnd() {
