@@ -1,4 +1,5 @@
 import { Deck } from './Deck.js';
+import * as cribbageRules from './cribbageRules.js';
 
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -7,6 +8,8 @@ const DECK_CRIB_SIZE = 4;
 const DECK_PLAY_SIZE = 8;
 const DECK_FLIP_SIZE = 1;
 const DECK_PLAYER_SIZE = 6;
+const PLAYER_MAX_HP = 50;
+const HP_BAR_FULL_WIDTH_PX = 200;
 const MAIN_NAME = ['Main Deck'];
 const CRIB_NAME = ['Crib Deck'];
 const PLAY_NAME = ['Play Deck'];
@@ -16,14 +19,20 @@ const PLAYER_NAMES = ['Player 1', 'Player 2']; // Display Names Of Characters Fo
 let gameState = {
     running: false,
     decks: {},
-    currentPlayer: 0,
     round: 1,
     cribOwner: 1,
     phase: 'cornerSelection',
     cornerBreakCompleteResolver: null,
-    barrageCompleteResolver: null
+    barrageCompleteResolver: null,
+    barrage: {
+        pegSequence: [], // cards played since last peg-sequence reset (31 or Go)
+        pegCount: 0      // running sum of pegValues in the current sequence
+    }
 };
 
+// Namespace of scoring helpers exported by cribbageRules.js
+// Use like: cribbageRules.scoreHand(handCards, starterCard, false)
+window.cribbageRules = cribbageRules;
 
 document.getElementById('btn_player1_send').addEventListener('click', setTargetDeckForSend);
 document.getElementById('btn_player2_send').addEventListener('click', setTargetDeckForSend);
@@ -69,6 +78,8 @@ function initGame() {
                 name: PLAYER_NAMES[0],
                 deck: new Deck('deck_id_player1Deck', DECK_PLAYER_SIZE, SUITS, RANKS),
                 score: 0,
+                maxHp: PLAYER_MAX_HP,
+                currentHp: PLAYER_MAX_HP,
                 corner: '#F08080',
                 hasSentToCrib: false,
                 hasPlayedOne: false
@@ -77,6 +88,8 @@ function initGame() {
                 name: PLAYER_NAMES[1],
                 deck: new Deck('deck_id_player2Deck', DECK_PLAYER_SIZE, SUITS, RANKS),
                 score: 0,
+                maxHp: PLAYER_MAX_HP,
+                currentHp: PLAYER_MAX_HP,
                 corner: '#4169E1',
                 hasSentToCrib: false,
                 hasPlayedOne: false
@@ -105,6 +118,8 @@ function initGame() {
 
         // disable/hide start button.
         document.getElementById('btn_main_start').classList.add('d-none');
+        updatePlayerHpUi('player1Deck');
+        updatePlayerHpUi('player2Deck');
         refreshDecks();
 
         runGame();
@@ -156,10 +171,6 @@ async function runGame() {
         phaseClosingRound();
         await phaseRoundEnd();
     }
-    // test how the commentary section looks for various attacks.
-    // addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '2 damage', underline: true }, '. [a pair]'], 'game_action');
-    // addCommentaryEntry([{ text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' delivers a ', { text: 'hook', bold: true }, ' to ', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' for ', { text: '4 damage', underline: true }, '. [flush of four]'], 'game_action');
-    // addCommentaryEntry([{ text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' sends an ', { text: 'uppercut', bold: true }, ' to ', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' for ', { text: '6 damage', underline: true }, '. [three of a kind]'], 'game_action');
 }
 
 async function phaseCornerBreak() {
@@ -198,20 +209,37 @@ async function phaseBarrage() {
     // send card from mainDeck to flipDeck to simulate cutting the deck and revealing the starter card.
     sendCards('mainDeck', 'flipDeck', 1, false);
     addCommentaryEntry('[Barrage] start.', 'game_info');
+
+    // call scoreNibs for the starter card and award points to the crib owner if starter card is a Jack.
+    const starterCard = gameState.decks.flipDeck.deck.getCards()[0];
+    const nibsPoints = cribbageRules.scoreNibs(starterCard);
+
+    // if dealer owner scored nibs, add those points to their gameState.decks.playerXDeck.score and add a commentary entry about it.
+    if (nibsPoints > 0) {
+        const cribOwnerDeck = gameState.cribOwner === 1 ? gameState.decks.player1Deck : gameState.decks.player2Deck;
+        const nonCribOwnerDeck = gameState.cribOwner === 1 ? gameState.decks.player2Deck : gameState.decks.player1Deck;
+        cribOwnerDeck.score += nibsPoints;
+        addCommentaryEntry([{ text: cribOwnerDeck.name, italic: true, color: cribOwnerDeck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: nonCribOwnerDeck.name, italic: true, color: nonCribOwnerDeck.corner }, ' for ', { text: '2 damage', underline: true }, '. [nibs]'], 'game_action');
+    }
+
+    // Reset the peg sequence for this round's barrage.
+    gameState.barrage.pegSequence = [];
+    gameState.barrage.pegCount = 0;
+
     await waitPhaseBarrageComplete();
 }
-    function waitPhaseBarrageComplete() {
-        if (isBarrageComplete()) {
-            return Promise.resolve();
-        }
-        return new Promise((resolve) => {
-            gameState.barrageCompleteResolver = resolve;
-        });
+function waitPhaseBarrageComplete() {
+    if (isBarrageComplete()) {
+        return Promise.resolve();
     }
-        function isBarrageComplete() {
-            return gameState.phase === 'barrage' &&
-                gameState.decks.playDeck.deck.getCardCount() === DECK_PLAY_SIZE;
-        }
+    return new Promise((resolve) => {
+        gameState.barrageCompleteResolver = resolve;
+    });
+}
+function isBarrageComplete() {
+    return gameState.phase === 'barrage' &&
+        gameState.decks.playDeck.deck.getCardCount() === DECK_PLAY_SIZE;
+}
 
 function phaseClosingRound() {
     gameState.phase = 'closingRound';
@@ -273,6 +301,76 @@ function onCardClick(event) {
     }
 }
 
+function updatePlayerHpUi(playerDeckName) {
+    const playerDeck = gameState.decks[playerDeckName];
+    if (!playerDeck) return;
+    const idBase = playerDeckName === 'player1Deck' ? 'player1' : 'player2';
+    const hpRemainingEl = document.querySelector(`#${idBase}_hp_remaining`);
+    const statsEl = document.querySelector(`#${idBase}_stats`);
+    if (!hpRemainingEl || !statsEl) return;
+
+    const hpRatio = playerDeck.maxHp > 0 ? (playerDeck.currentHp / playerDeck.maxHp) : 0;
+    const clampedRatio = Math.max(0, Math.min(1, hpRatio));
+    hpRemainingEl.style.width = `${Math.round(HP_BAR_FULL_WIDTH_PX * clampedRatio)}px`;
+    statsEl.textContent = `${playerDeck.currentHp}/${playerDeck.maxHp}`;
+}
+
+function applyDamageToPlayer(playerDeckName, damage) {
+    const playerDeck = gameState.decks[playerDeckName];
+    if (!playerDeck || damage <= 0) return;
+    playerDeck.currentHp = Math.max(0, playerDeck.currentHp - damage);
+    updatePlayerHpUi(playerDeckName);
+}
+
+// Evaluates pegging scoring after a player plays a card to the play deck during barrage.
+function evaluateBarragePegging(fromDeckName, playedCard) {
+    gameState.barrage.pegSequence.push(playedCard);
+    gameState.barrage.pegCount += playedCard.pegValue;
+
+    const otherPlayerDeckName = (fromDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
+    const pegCount = gameState.barrage.pegCount;
+    const currentPlayerCanPlay = gameState.decks[fromDeckName].deck.getCards().some(c => pegCount + c.pegValue <= 31);
+    const opponentCanPlay = gameState.decks[otherPlayerDeckName].deck.getCards().some(c => pegCount + c.pegValue <= 31);
+    const isLastCard = !currentPlayerCanPlay && !opponentCanPlay;
+
+    const result = cribbageRules.scorePegging(gameState.barrage.pegSequence, isLastCard);
+
+    if (result.total > 0) {
+        const scoringDeck = gameState.decks[fromDeckName];
+        const opponentDeck = gameState.decks[otherPlayerDeckName];
+        scoringDeck.score += result.total;
+
+        const attackName = result.total <= 2 ? 'jab' : result.total <= 4 ? 'hook' : 'uppercut';
+        const reasons = [];
+        if (result.fifteen > 0) reasons.push('fifteen');
+        if (result.thirtyOne > 0) reasons.push('thirty-one');
+        if (result.pairs === 2) reasons.push('a pair');
+        if (result.pairs === 6) reasons.push('3 of a kind');
+        if (result.pairs === 12) reasons.push('4 of a kind');
+        if (result.run > 0) reasons.push(`run of ${result.run}`);
+        if (result.lastCard > 0) reasons.push('last card');
+        applyDamageToPlayer(otherPlayerDeckName, result.total);
+        addCommentaryEntry([
+            { text: scoringDeck.name, italic: true, color: scoringDeck.corner },
+            // if jab, use 'hits a', if hook, use 'delivers a', if uppercut, use 'sends an'
+            attackName === 'jab' ? ' hits a ' : attackName === 'hook' ? ' delivers a ' : ' sends an ',
+            { text: attackName, bold: true },
+            // if jab, use 'on', else use 'to'
+            attackName === 'jab' ? ' on ' : ' to ',
+            { text: opponentDeck.name, italic: true, color: opponentDeck.corner },
+            ' for ',
+            { text: `${result.total} damage`, underline: true },
+            `. [${reasons.join(', ')}]`
+        ], 'game_action');
+    }
+
+    // Reset peg sequence after 31 is hit or neither player can play (Go).
+    if (result.thirtyOne > 0 || isLastCard) {
+        gameState.barrage.pegSequence = [];
+        gameState.barrage.pegCount = 0;
+    }
+}
+
 function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = false) {
     const gsFromDeckProps = gameState.decks[fromDeckName];
     const phase = gameState.phase;
@@ -308,6 +406,12 @@ function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = fa
                     invalidReason = `barrage cards must be sent to playDeck, not ${toDeckName}.`;
                 } else if (specificCards && numOfSpecificCards !== 1) {
                     invalidReason = `barrage requires exactly 1 selected card, got ${numOfSpecificCards}.`;
+                } else if (specificCards && numOfSpecificCards === 1) {
+                    const cardId = selectedCardElements[0].dataset.cardId;
+                    const card = gsFromDeckPropsDeck.getCards().find(c => c.id === cardId);
+                    if (card && gameState.barrage.pegCount + card.pegValue > 31) {
+                        invalidReason = `playing ${card.rank} (${card.pegValue}) would exceed 31. Current total: ${gameState.barrage.pegCount}.`;
+                    }
                 }
             }
             break;
@@ -339,21 +443,28 @@ function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = fa
         gsFromDeckProps.hasSentToCrib = true;
     } else if (phase === 'barrage' && toDeckName === 'playDeck') {
         gsFromDeckProps.hasPlayedOne = true;
-        // set the other player's hasPlayedOne to false
         const otherPlayerDeckName = (fromDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
         gameState.decks[otherPlayerDeckName].hasPlayedOne = false;
     }
 
     // pass specific selected cards or deal a number of cards from the top of the fromDeck to the toDeck.
+    let barragePlayedCard = null;
     if (specificCards) {
         const selectedCards = selectedCardElements.map(cardElement => {
             const cardId = cardElement.dataset.cardId;
             return gsFromDeckPropsDeck.getCards().find(card => card.id === cardId);
         });
+        if (phase === 'barrage' && toDeckName === 'playDeck' && selectedCards.length === 1) {
+            barragePlayedCard = selectedCards[0];
+        }
         console.log(`Specific cards selected to send from ${fromDeckName} to ${toDeckName}:`, selectedCards);
         gsFromDeckPropsDeck.pass(gsToDeckPropsDeck, selectedCards);
     } else {
         gsFromDeckPropsDeck.deal([gsToDeckPropsDeck], [cardsToSend], 'top');
+    }
+
+    if (barragePlayedCard) {
+        evaluateBarragePegging(fromDeckName, barragePlayedCard);
     }
     refreshDecks();
 
