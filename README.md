@@ -10,7 +10,7 @@ Clubbage is a blend of the card game "Cribbage" with the video game "Mike Tyson'
 
 2. **Phase: Corner Break:** Six cards are dealt to each player. Each player discards 2 cards to the crib. The dealer gets the crib.
 
-3. **Bell Rings:** The round starts and a shared top card of the deck is turned up.
+3. **Phase: Round Start:** Bell Rings. The round starts and a shared top card of the deck is turned up.
 
 4. **Barrage Phase:** Starting with the non-dealer, each player takes turns playing one card at a time, and a display of the cumulative total of the cards played is shown. The total cannot exceed 31.
 
@@ -34,12 +34,14 @@ Clubbage is a blend of the card game "Cribbage" with the video game "Mike Tyson'
    - 3 points for a run of three, 4 points for a run of four, etc.
    - 4 points having a flush of four, 5 points for a flush of five.
 
-6. **Saved by the Bell:** The bell rings, and players go back to their corners. Goto step 2 above.
+6. **Phase Round End:** The bell rings (saved by the bell), and players go back to their corners. Goto step 2 above.
 
 
 ## Miscellaneous Game Mechanics
 
-**Attack Animations:** Jab animation for hitting 1-2 points, hook animation for hitting 3-4 points, uppercut animation for hitting 5 or more points.
+**Attack Animations:** Jab animation for hitting 1-2 points, hook animation for hitting 3-4 points, uppercut animation for hitting 5 or more points. Adjective describing hit should be based on high and low end of damage for the animation.
+
+**Shuffle Animations:** Sorting by suit will turn player's feet to face left. Sorting by value will turn player's feet to face right. Shuffling will make player cock their arms.
 
 **Ask for Advice:** A Player may ask for advice from their trainer on what two cards they should drop into the burst/crib. A Player can only do this once per match.*
 
