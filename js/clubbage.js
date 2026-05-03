@@ -34,10 +34,9 @@ let gameState = {
 // Use like: cribbageRules.scoreHand(handCards, starterCard, false)
 window.cribbageRules = cribbageRules;
 
+// hook up event listeners for send buttons. function will determine where to send cards based on gameState.phase.
 document.getElementById('btn_player1_send').addEventListener('click', setTargetDeckForSend);
 document.getElementById('btn_player2_send').addEventListener('click', setTargetDeckForSend);
-
-
 function setTargetDeckForSend(event) {
     // check gameState.phase to determine which deck to send cards to (cribDeck during cornerBreak, playDeck during barrage).
     const phase = gameState.phase;
@@ -49,6 +48,15 @@ function setTargetDeckForSend(event) {
         const fromDeckName = event.currentTarget.id.includes('player1') ? 'player1Deck' : 'player2Deck';
         sendCards(fromDeckName, targetDeckName, null, true);
     }
+}
+
+function updateCribDeckAlignment() {
+    const cribDeckElement = document.getElementById('deck_id_cribDeck');
+    if (!cribDeckElement) return;
+
+    cribDeckElement.classList.add('d-flex');
+    cribDeckElement.classList.remove('justify-content-start', 'justify-content-end', 'justify-content-center');
+    cribDeckElement.classList.add(gameState.cribOwner === 1 ? 'justify-content-start' : 'justify-content-end');
 }
 
 // Called by "Start Game" button.
@@ -135,17 +143,20 @@ function phaseCornerSelection() {
         gameState.decks.player2Deck.corner = '#4169E1';
         addCommentaryEntry(['Flipping Coin...', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' won the coin flip and will take the ', { text: 'red', color: gameState.decks.player1Deck.corner }, ' corner! [', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' gets first crib]'], 'game_success');
         gameState.cribOwner = 1;
+        updateCribDeckAlignment();
         gameState.decks.player1Deck.hasPlayedOne = true; // player is dealer; setup opponent to play a card first in the barrage phase.
         gameState.decks.player2Deck.hasPlayedOne = false;
-        document.getElementById('deck_id_player1Deck').style.backgroundColor = '#F08080';
-        document.getElementById('deck_id_player2Deck').style.backgroundColor = '#4169E1';
+        // set the grandparent element of player1Deck and player2Deck to the respective corner colors to visually indicate corners in the UI.
+        document.getElementById('deck_id_player1Deck').parentElement.parentElement.style.backgroundColor = '#F08080';
+        document.getElementById('deck_id_player2Deck').parentElement.parentElement.style.backgroundColor = '#4169E1';
     } else {
         gameState.decks.player1Deck.corner = '#4169E1';
         gameState.decks.player2Deck.corner = '#F08080';
         addCommentaryEntry(['Flipping Coin...', { text: gameState.decks.player1Deck.name, italic: true, color: gameState.decks.player1Deck.corner }, ' lost the coin flip and will take the ', { text: 'blue', color: gameState.decks.player1Deck.corner }, ' corner. [', { text: gameState.decks.player2Deck.name, italic: true, color: gameState.decks.player2Deck.corner }, ' gets first crib]'], 'game_success');
         gameState.cribOwner = 2;
-        document.getElementById('deck_id_player1Deck').style.backgroundColor = '#4169E1';
-        document.getElementById('deck_id_player2Deck').style.backgroundColor = '#F08080';
+        updateCribDeckAlignment();
+        document.getElementById('deck_id_player1Deck').parentElement.parentElement.style.backgroundColor = '#4169E1';
+        document.getElementById('deck_id_player2Deck').parentElement.parentElement.style.backgroundColor = '#F08080';
         gameState.decks.player1Deck.hasPlayedOne = false; // opponent is dealer. setup player to play a card first in the barrage phase.
         gameState.decks.player2Deck.hasPlayedOne = true;
     }
@@ -326,6 +337,7 @@ async function phaseRoundEnd() {
     gameState.round++;
     // change the crib owner for the next round.
     gameState.cribOwner = (gameState.cribOwner === 1) ? 2 : 1;
+    updateCribDeckAlignment();
     // reset hasPlayedOne for both players for the next round so that non-dealer has to play first during barrage phase.
     gameState.decks.player1Deck.hasPlayedOne = (gameState.cribOwner === 1);
     gameState.decks.player2Deck.hasPlayedOne = (gameState.cribOwner === 2);

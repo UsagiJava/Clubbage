@@ -38,27 +38,31 @@
             </div>
         </div>
 
-        <div class="row bg-secondary-subtle">
-            <div class="col-12">
-                <div id="deck_id_flipDeck"></div>
-            </div>
-        </div>
 
         <div class="row bg-primary-subtle">
-            <div class="col-12">
-                <div id="deck_id_cribDeck"></div>
+            <div class="col-12 py-2 position-relative">
+                <div id="deck_id_cribDeck" class="d-flex w-100 align-items-start position-absolute top-0 start-0"></div>
+                <div class="d-flex justify-content-center">
+                    <div id="deck_id_flipDeck"></div>
+                </div>
             </div>
         </div>
 
-        <div class="row bg-secondary-subtle">
-            <div class="col-12">
-                <div id="deck_id_player2Deck"></div>
-            </div>
-            <div id="deck_id_player2Deck_controls" class="col-12 d-flex align-items-center gap-2 flex-wrap my-2">
-                <button id="btn_player2_shuffle" class="btn btn-primary text-nowrap" onclick="shuffleDeck('deck_id_player2Deck', 'player2Deck')" disabled="disabled">Shuffle</button>
-                <button id="btn_player2_sort_suit" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player2Deck', 'player2Deck','suit-value')" disabled="disabled">Sort Suit</button>
-                <button id="btn_player2_sort_value" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player2Deck', 'player2Deck','value')" disabled="disabled">Sort Value</button>
-                <button id="btn_player2_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
+        <div class="row bg-secondary-subtle py-2">
+            <div class="col-12 text-center align-self-start py-2">
+                <div id="cards_table" class="me-3">
+                    <div id="deck_id_player2Deck"></div>
+                </div>
+                <div id="controls_table">
+                    <div class="text-center">
+                        <button id="btn_player2_sort_suit" class="btn btn-primary text-nowrap px-2 py-1" onclick="sortDeck('deck_id_player2Deck', 'player2Deck','suit-value')" disabled="disabled" aria-label="Sort Suit" title="Sort Suit"><i class="bi bi-arrow-left"></i></button>
+                        <button id="btn_player2_shuffle" class="btn btn-primary text-nowrap px-2 py-1" onclick="shuffleDeck('deck_id_player2Deck', 'player2Deck')" disabled="disabled" aria-label="Shuffle" title="Shuffle"><i class="bi bi-arrow-up"></i></button>
+                        <button id="btn_player2_sort_value" class="btn btn-primary text-nowrap px-2 py-1" onclick="sortDeck('deck_id_player2Deck', 'player2Deck','value')" disabled="disabled" aria-label="Sort Value" title="Sort Value"><i class="bi bi-arrow-right"></i></button>
+                    </div>
+                    <div class="text-center pt-1">
+                        <button id="btn_player2_send" class="btn btn-primary text-nowrap px-2 py-1" type="button" disabled="disabled" aria-label="Send" title="Send"><i class="bi bi-arrow-down"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -68,15 +72,21 @@
             </div>
         </div>
 
-        <div class="row bg-secondary-subtle">
-            <div class="col-12">
-                <div id="deck_id_player1Deck"></div>
-            </div>
-            <div id="deck_id_player1Deck_controls" class="col-12 d-flex align-items-center gap-2 flex-wrap my-2">
-                <button id="btn_player1_shuffle" class="btn btn-primary text-nowrap" onclick="shuffleDeck('deck_id_player1Deck', 'player1Deck')" disabled="disabled">Shuffle</button>
-                <button id="btn_player1_sort_suit" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player1Deck', 'player1Deck','suit-value')" disabled="disabled">Sort Suit</button>
-                <button id="btn_player1_sort_value" class="btn btn-primary text-nowrap" onclick="sortDeck('deck_id_player1Deck', 'player1Deck','value')" disabled="disabled">Sort Value</button>
-                <button id="btn_player1_send" class="btn btn-primary text-nowrap" type="button" disabled="disabled">Send</button>
+        <div class="row bg-secondary-subtle py-2">
+            <div class="col-12 text-center align-self-start py-2">
+                <div id="cards_table" class="me-3">
+                    <div id="deck_id_player1Deck"></div>
+                </div>
+                <div id="controls_table">
+                    <div class="text-center pb-1">
+                        <button id="btn_player1_send" class="btn btn-primary text-nowrap px-2 py-1" type="button" disabled="disabled" aria-label="Send" title="Send"><i class="bi bi-arrow-up"></i></button>
+                    </div>
+                    <div class="text-center">
+                        <button id="btn_player1_sort_suit" class="btn btn-primary text-nowrap px-2 py-1" onclick="sortDeck('deck_id_player1Deck', 'player1Deck','suit-value')" disabled="disabled" aria-label="Sort Suit" title="Sort Suit"><i class="bi bi-arrow-left"></i></button>
+                        <button id="btn_player1_shuffle" class="btn btn-primary text-nowrap px-2 py-1" onclick="shuffleDeck('deck_id_player1Deck', 'player1Deck')" disabled="disabled" aria-label="Shuffle" title="Shuffle"><i class="bi bi-arrow-down"></i></button>
+                        <button id="btn_player1_sort_value" class="btn btn-primary text-nowrap px-2 py-1" onclick="sortDeck('deck_id_player1Deck', 'player1Deck','value')" disabled="disabled" aria-label="Sort Value" title="Sort Value"><i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
