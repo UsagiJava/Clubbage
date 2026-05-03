@@ -53,10 +53,11 @@ function setTargetDeckForSend(event) {
 function updateCribDeckAlignment() {
     const cribDeckElement = document.getElementById('deck_id_cribDeck');
     if (!cribDeckElement) return;
-
-    cribDeckElement.classList.add('d-flex');
-    cribDeckElement.classList.remove('justify-content-start', 'justify-content-end', 'justify-content-center');
-    cribDeckElement.classList.add(gameState.cribOwner === 1 ? 'justify-content-start' : 'justify-content-end');
+    // move cribDeckElement inside #player1_cribDeck or #player2_cribDeck base on gameState.cribOwner.
+    const parentElement = document.getElementById(`player${gameState.cribOwner}_cribDeck`);
+    if (parentElement && cribDeckElement.parentNode !== parentElement) {
+        parentElement.appendChild(cribDeckElement);
+    }
 }
 
 // Called by "Start Game" button.
@@ -189,9 +190,8 @@ async function phaseCornerBreak() {
     gameState.decks.player1Deck.hasSentToCrib = false;
     gameState.decks.player2Deck.hasSentToCrib = false;
     addCommentaryEntry('[Corner Break] start.', 'game_info');
-    addCommentaryEntry('[Corner Break] shuffling deck.', 'game_info');
+    addCommentaryEntry('[Corner Break] shuffling deck and dealing cards to fighters...', 'game_info');
     shuffleDeck('deck_id_mainDeck', 'mainDeck');
-    addCommentaryEntry('[Corner Break] dealing cards to fighters.', 'game_info');
     dealToPlayers();
     await waitPhaseCornerBreakComplete();
 }
@@ -453,6 +453,98 @@ function evaluateBarragePegging(fromDeckName, playedCard) {
     }
 }
 
+function canDeckPlayAtPegCount(deckName) {
+    const deckInfo = gameState.decks[deckName];
+    if (!deckInfo) return false;
+    return deckInfo.deck.getCards().some(card => gameState.barrage.pegCount + card.pegValue <= 31);
+}
+
+function handleBarrageGo(fromDeckName) {
+    const fromDeck = gameState.decks[fromDeckName];
+    const otherPlayerDeckName = (fromDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
+    const otherPlayerDeck = gameState.decks[otherPlayerDeckName];
+    if (!fromDeck || !otherPlayerDeck) return false;
+
+    // Not this player's turn or they still have a legal play: this is not a Go.
+    if (fromDeck.hasPlayedOne || canDeckPlayAtPegCount(fromDeckName)) return false;
+
+    addCommentaryEntry([
+        { text: fromDeck.name, italic: true, color: fromDeck.corner },
+        ' calls ',
+        { text: 'Go', bold: true },
+        '.'
+    ], 'game_warning');
+
+    const opponentCanPlay = canDeckPlayAtPegCount(otherPlayerDeckName);
+    if (opponentCanPlay) {
+        fromDeck.hasPlayedOne = true;
+        otherPlayerDeck.hasPlayedOne = false;
+        refreshDecks();
+        return true;
+    }
+
+    // Neither player can play at this count. Award last-card point and reset count.
+    if (gameState.barrage.pegSequence.length > 0 && gameState.barrage.pegCount < 31) {
+        const lastPlayedCard = gameState.barrage.pegSequence[gameState.barrage.pegSequence.length - 1];
+        const lastPlayerDeckName = lastPlayedCard.ownerDeck;
+        const defendingDeckName = (lastPlayerDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
+        const lastPlayerDeck = gameState.decks[lastPlayerDeckName];
+        const defendingDeck = gameState.decks[defendingDeckName];
+
+        if (lastPlayerDeck && defendingDeck) {
+            lastPlayerDeck.score += 1;
+            applyDamageToPlayer(defendingDeckName, 1);
+            addCommentaryEntry([
+                { text: lastPlayerDeck.name, italic: true, color: lastPlayerDeck.corner },
+                ' hits a ',
+                { text: 'jab', bold: true },
+                ' on ',
+                { text: defendingDeck.name, italic: true, color: defendingDeck.corner },
+                ' for ',
+                { text: '1 damage', underline: true },
+                '. [last card at Go]'
+            ], 'game_action');
+        }
+    }
+
+    gameState.barrage.pegSequence = [];
+    gameState.barrage.pegCount = 0;
+    // After a full Go sequence, the player who first said Go leads the next count.
+    fromDeck.hasPlayedOne = false;
+    otherPlayerDeck.hasPlayedOne = true;
+
+    addCommentaryEntry('[Barrage] peg count resets to 0 after Go.', 'game_info');
+    refreshDecks();
+    return true;
+}
+
+function getActiveBarragePlayerDeckName() {
+    const p1Played = gameState.decks.player1Deck.hasPlayedOne;
+    const p2Played = gameState.decks.player2Deck.hasPlayedOne;
+    if (!p1Played && p2Played) return 'player1Deck';
+    if (!p2Played && p1Played) return 'player2Deck';
+    return null;
+}
+
+function processForcedBarrageGoIfNeeded() {
+    if (gameState.phase !== 'barrage') return;
+
+    let guard = 0;
+    while (!isBarrageComplete() && guard < 4) {
+        const activeDeckName = getActiveBarragePlayerDeckName();
+        if (!activeDeckName) break;
+
+        const activeDeck = gameState.decks[activeDeckName];
+        const hasAnyCards = activeDeck?.deck.getCardCount() > 0;
+        const canPlay = hasAnyCards && canDeckPlayAtPegCount(activeDeckName);
+        if (canPlay) break;
+
+        const handledGo = handleBarrageGo(activeDeckName);
+        if (!handledGo) break;
+        guard++;
+    }
+}
+
 function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = false) {
     const gsFromDeckProps = gameState.decks[fromDeckName];
     const phase = gameState.phase;
@@ -509,6 +601,21 @@ function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = fa
     }
 
     if (invalidReason) {
+        const handledGo =
+            phase === 'barrage' &&
+            toDeckName === 'playDeck' &&
+            specificCards &&
+            isPlayerDeck &&
+            handleBarrageGo(fromDeckName);
+
+        if (handledGo) {
+            console.log(
+                `%cGo processed - ${fromDeckName} had no legal play at ${gameState.barrage.pegCount}.`,
+                'background: khaki; color: black; padding: 2px 4px;'
+            );
+            return;
+        }
+
         console.log(
             `%cInvalid move - ${cardsToSend} cards from: ${fromDeckName} (${gsFromDeckProps.hasPlayedOne ?? 'n/a'}) | to: ${toDeckName} | phase: ${phase}. ${invalidReason}`,
             'background: lightcoral; color: black; padding: 2px 4px;'
@@ -547,6 +654,9 @@ function sendCards(fromDeckName, toDeckName, numCards = null, specificCards = fa
 
     if (barragePlayedCard) {
         evaluateBarragePegging(fromDeckName, barragePlayedCard);
+    }
+    if (phase === 'barrage' && toDeckName === 'playDeck' && barragePlayedCard) {
+        processForcedBarrageGoIfNeeded();
     }
     refreshDecks();
 
@@ -627,9 +737,6 @@ function showDeck(locationID, deck) {
         cardDiv.innerHTML = `<div class="game_card_rank">${card.rank}</div><i class="bi ${suitIconClass} d-block" aria-label="${card.suit}"></i>`;
         cardDiv.addEventListener('click', onCardClick);
         location.appendChild(cardDiv);
-    }
-    if (locationID === 'deck_id_mainDeck' && deck.getCardCount() > 0) {
-        location.classList.add('d-none');
     }
 }
 
