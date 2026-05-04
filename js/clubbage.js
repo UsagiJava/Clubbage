@@ -9,12 +9,12 @@ const DECK_PLAY_SIZE = 8;
 const DECK_FLIP_SIZE = 1;
 const DECK_PLAYER_SIZE = 6;
 const PLAYER_MAX_HP = 50;
-const HP_BAR_FULL_WIDTH_PX = 200;
 const MAIN_NAME = ['Main Deck'];
 const CRIB_NAME = ['Crib Deck'];
 const PLAY_NAME = ['Play Deck'];
 const FLIP_NAME = ['Flip Deck'];
 const PLAYER_NAMES = ['Player 1', 'Player 2']; // Display Names Of Characters For Game UI Placeholder.
+const NUMBER_OF_ROUNDS = 5;
 
 let gameState = {
     running: false,
@@ -26,7 +26,8 @@ let gameState = {
     barrageCompleteResolver: null,
     barrage: {
         pegSequence: [], // cards played since last peg-sequence reset (31 or Go)
-        pegCount: 0      // running sum of pegValues in the current sequence
+        pegCount: 0,     // running sum of pegValues in the current sequence
+        displayTotal: 0  // running barrage score shown in the round indicator
     }
 };
 
@@ -58,6 +59,16 @@ function updateCribDeckAlignment() {
     if (parentElement && cribDeckElement.parentNode !== parentElement) {
         parentElement.appendChild(cribDeckElement);
     }
+}
+
+function updateRoundNumberUi() {
+    const roundNumberEl = document.getElementById('round_number');
+    if (!roundNumberEl) return;
+
+    const displayRound = Math.max(1, gameState.round);
+    const pegCount = gameState.barrage?.pegCount ?? 0;
+    const displayTotal = pegCount > 0 ? pegCount : Math.max(0, gameState.barrage?.displayTotal ?? 0);
+    roundNumberEl.textContent = `R${displayRound}:${String(displayTotal).padStart(2, '0')}`;
 }
 
 // Called by "Start Game" button.
@@ -127,8 +138,8 @@ function initGame() {
 
         // disable/hide start button.
         document.getElementById('btn_main_start').classList.add('d-none');
-        updatePlayerHpUi('player1Deck');
-        updatePlayerHpUi('player2Deck');
+        updateAllPlayerHpUi();
+        updateRoundNumberUi();
         refreshDecks();
 
         runGame();
@@ -177,7 +188,7 @@ async function runGame() {
     // 4) "Closing the Round" phase. random block or dodge happens of 0 crib points scored, else a jab, hook, or uppercuts happens here.
     // 5) "Round End" phase. Bell Rings. Increament round counter. Check for game end condition. If not end, loop back to "Corner Break" phase.
 
-    while(gameState.round <= 3) {
+    while(gameState.round <= NUMBER_OF_ROUNDS) {
         await phaseCornerBreak();
         phaseRoundStart();
         await phaseBarrage();
@@ -188,6 +199,8 @@ async function runGame() {
 
 async function phaseCornerBreak() {
     gameState.phase = 'cornerBreak';
+    gameState.barrage.displayTotal = 0;
+    updateRoundNumberUi();
     gameState.decks.player1Deck.hasSentToCrib = false;
     gameState.decks.player2Deck.hasSentToCrib = false;
     addCommentaryEntry('[Corner Break] start.', 'game_info');
@@ -213,6 +226,8 @@ async function phaseCornerBreak() {
 
 function phaseRoundStart() {
     gameState.phase = 'roundStart';
+    gameState.barrage.displayTotal = 0;
+    updateRoundNumberUi();
     addCommentaryEntry(['[Bell Rings] start.'], 'game_info');
     addCommentaryEntry(['Start of round ', { text: gameState.round }, '. Fighters step into the center of the ring.'], 'game_success');
     // send card from mainDeck to flipDeck to simulate cutting the deck and revealing the starter card.
@@ -223,6 +238,8 @@ function phaseRoundStart() {
 
 async function phaseBarrage() {
     gameState.phase = 'barrage';
+    gameState.barrage.displayTotal = 0;
+    updateRoundNumberUi();
     addCommentaryEntry('[Barrage] start.', 'game_info');
 
     // call scoreNibs for the starter card and award points to the crib owner if starter card is a Jack.
@@ -234,6 +251,8 @@ async function phaseBarrage() {
         const cribOwnerDeck = gameState.cribOwner === 1 ? gameState.decks.player1Deck : gameState.decks.player2Deck;
         const nonCribOwnerDeck = gameState.cribOwner === 1 ? gameState.decks.player2Deck : gameState.decks.player1Deck;
         cribOwnerDeck.score += nibsPoints;
+        gameState.barrage.displayTotal += nibsPoints;
+        updateRoundNumberUi();
         addCommentaryEntry([{ text: cribOwnerDeck.name, italic: true, color: cribOwnerDeck.corner }, ' hits a ', { text: 'jab', bold: true }, ' on ', { text: nonCribOwnerDeck.name, italic: true, color: nonCribOwnerDeck.corner }, ' for ', { text: '2 damage', underline: true }, '. [nibs]'], 'game_action');
     }
 
@@ -391,14 +410,21 @@ function updatePlayerHpUi(playerDeckName) {
     const playerDeck = gameState.decks[playerDeckName];
     if (!playerDeck) return;
     const idBase = playerDeckName === 'player1Deck' ? 'player1' : 'player2';
+    const hpContainerEl = document.querySelector(`#${idBase}_hitpoints`);
     const hpRemainingEl = document.querySelector(`#${idBase}_hp_remaining`);
     const statsEl = document.querySelector(`#${idBase}_stats`);
-    if (!hpRemainingEl || !statsEl) return;
+    if (!hpContainerEl || !hpRemainingEl || !statsEl) return;
 
     const hpRatio = playerDeck.maxHp > 0 ? (playerDeck.currentHp / playerDeck.maxHp) : 0;
     const clampedRatio = Math.max(0, Math.min(1, hpRatio));
-    hpRemainingEl.style.width = `${Math.round(HP_BAR_FULL_WIDTH_PX * clampedRatio)}px`;
+    const fullBarWidthPx = hpContainerEl.clientWidth;
+    hpRemainingEl.style.width = `${Math.round(fullBarWidthPx * clampedRatio)}px`;
     statsEl.textContent = `${playerDeck.currentHp}/${playerDeck.maxHp}`;
+}
+
+function updateAllPlayerHpUi() {
+    updatePlayerHpUi('player1Deck');
+    updatePlayerHpUi('player2Deck');
 }
 
 function applyDamageToPlayer(playerDeckName, damage) {
@@ -410,8 +436,10 @@ function applyDamageToPlayer(playerDeckName, damage) {
 
 // Evaluates pegging scoring after a player plays a card to the play deck during barrage.
 function evaluateBarragePegging(fromDeckName, playedCard) {
+    gameState.barrage.displayTotal = 0;
     gameState.barrage.pegSequence.push(playedCard);
     gameState.barrage.pegCount += playedCard.pegValue;
+    updateRoundNumberUi();
 
     const otherPlayerDeckName = (fromDeckName === 'player1Deck') ? 'player2Deck' : 'player1Deck';
     const pegCount = gameState.barrage.pegCount;
@@ -454,6 +482,7 @@ function evaluateBarragePegging(fromDeckName, playedCard) {
     if (result.thirtyOne > 0 || isLastCard) {
         gameState.barrage.pegSequence = [];
         gameState.barrage.pegCount = 0;
+        updateRoundNumberUi();
     }
 }
 
@@ -513,6 +542,7 @@ function handleBarrageGo(fromDeckName) {
 
     gameState.barrage.pegSequence = [];
     gameState.barrage.pegCount = 0;
+    updateRoundNumberUi();
     // After a full Go sequence, the player who first said Go leads the next count.
     fromDeck.hasPlayedOne = false;
     otherPlayerDeck.hasPlayedOne = true;
@@ -833,3 +863,8 @@ window.shuffleDeck = shuffleDeck;
 window.sortDeck = sortDeck;
 window.dealToPlayers = dealToPlayers;
 window.sendCards = sendCards;
+
+window.addEventListener('resize', () => {
+    if (!gameState.running) return;
+    updateAllPlayerHpUi();
+});
